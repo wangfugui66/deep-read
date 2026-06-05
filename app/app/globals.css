@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+@theme {
+  --color-reader-day-bg: #ffffff;
+  --color-reader-day-text: #1a1a1a;
+  --color-reader-warm-bg: #f5f0e8;
+  --color-reader-warm-text: #3d3929;
+  --color-reader-night-bg: #1e1e2e;
+  --color-reader-night-text: #cdd6f4;
+  --color-surface-hover: rgba(0, 0, 0, 0.04);
+}
+
+/* Selection toolbar: float above text */
+.selection-toolbar {
+  position: fixed;
+  z-index: 50;
+  transform: translateX(-50%);
+  animation: toolbar-in 0.15s ease-out;
+}
+
+@keyframes toolbar-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(4px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* Smooth scroll for chapter transitions */
+.chapter-fade {
+  animation: fade-in 0.2s ease-out;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

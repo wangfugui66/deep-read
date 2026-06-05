@@ -1,0 +1,20 @@
+# DeepRead-v2 — Phase 2 contract dependencies
+# Document processing pipeline: PDF, EPUB, DOCX, TXT → Markdown
+
+fastapi>=0.115.0
+uvicorn>=0.30.0
+openai>=1.50.0
+networkx>=3.0
+pydantic>=2.0
+pytest>=7.0
+
+# ── Document parsers (Phase 2 contract) ──
+pymupdf4llm>=0.0.19
+pymupdf>=1.24.0
+ebooklib>=0.18
+beautifulsoup4>=4.12
+python-docx>=1.1
+markdownify>=0.13
+
+# ── Graph analysis (zero-token local engine) ──
+python-louvain>=0.16

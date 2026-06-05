@@ -1,0 +1,59 @@
+# ====================================================================
+# DeepRead-v2 .gitignore — zero-database architecture
+# ====================================================================
+
+# ── User data (never commit private books/knowledge bases) ──
+/data/raw/
+/data/wiki/
+
+# Keep directory structure placeholders only
+!/data/raw/.gitkeep
+!/data/wiki/.gitkeep
+
+# ── Python ──
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.so
+
+# ── Virtual environments ──
+venv/
+.venv/
+env/
+.env/
+
+# ── Environment & secrets ──
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ── IDE ──
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ── Next.js (frontend) ──
+/app/.next/
+/app/out/
+/app/node_modules/
+/app/.turbo/
+
+# ── Docker ──
+.docker/
+
+# ── OS junk ──
+*.log
+*.tmp
