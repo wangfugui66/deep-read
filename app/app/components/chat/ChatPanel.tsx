@@ -185,7 +185,7 @@ export default function ChatPanel({ bookName }: Props) {
     <aside className="flex flex-col w-80 border-l border-neutral-200 bg-white shrink-0 h-full relative">
       {/* Header */}
       <div className="flex items-center justify-between h-12 px-4 border-b border-neutral-200 shrink-0">
-        <h3 className="text-sm font-semibold text-neutral-700">费曼精读</h3>
+        <h3 className="text-sm font-semibold text-neutral-700">AI 伴读</h3>
         <div className="flex items-center gap-1">
           <button
             onClick={newSession}
