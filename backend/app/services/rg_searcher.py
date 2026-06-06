@@ -10,12 +10,11 @@ import os
 import subprocess
 from pathlib import Path
 
+from app.core.config import DATA_ROOT
+
 logger = logging.getLogger("deepread.rg_searcher")
 
 RG_PATH = "rg"  # ripgrep must be on PATH
-
-# ── Absolute root for book data ──
-_DATA_ROOT = Path(__file__).parent.parent.parent / "data"
 
 
 def _find_rg() -> str | None:
@@ -89,8 +88,8 @@ def search_book(book_name: str, query: str, max_results: int = 5) -> dict:
 def _resolve_search_paths(book_name: str) -> list[Path]:
     """Resolve the directories to search for a given book."""
     candidates = [
-        _DATA_ROOT / "wiki" / book_name,
-        _DATA_ROOT / "raw" / "sources" / book_name,
+        DATA_ROOT / "wiki" / book_name,
+        DATA_ROOT / "raw" / "sources" / book_name,
     ]
     return [p for p in candidates if p.is_dir()]
 

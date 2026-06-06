@@ -32,6 +32,7 @@ interface GraphNode {
   size: number;
   color: string;
   degree: number;
+  isDragging?: boolean;
 }
 
 interface GraphEdge {
@@ -99,9 +100,13 @@ export default function KnowledgeGraphViewer({ bookName }: Props) {
   const mountedRef = useRef(true);
   const cameraRef = useRef({ x: 0, y: 0, scale: 1, targetX: 0, targetY: 0, targetScale: 1 });
   const hoveredNode = useRef<string | null>(null);
+  const draggedNodeRef = useRef<string | null>(null);
+  const isPanningRef = useRef(false);
+  const lastPanPosRef = useRef({ x: 0, y: 0 });
   const tooltipRef = useRef<{ id: string; label: string; type: string; degree: number; x: number; y: number } | null>(null);
   const [tooltip, setTooltip] = useState<{ id: string; label: string; type: string; degree: number } | null>(null);
-  const [zoomLevel, setZoomLevel] = useState(1);
+  const zoomLevelRef = useRef(1);
+  const zoomLabelRef = useRef<HTMLSpanElement>(null);
 
   // ── Knowledge card state ──
   const [knowledgeCard, setKnowledgeCard] = useState<{ nodeId: string; title: string; content: string } | null>(null);
@@ -267,12 +272,14 @@ export default function KnowledgeGraphViewer({ bookName }: Props) {
     }
 
     for (const n of nodes) {
+      if (n.isDragging) continue; // Dragged nodes are hand-positioned
       n.vx -= n.x * 0.0005;
       n.vy -= n.y * 0.0005;
     }
 
     let totalEnergy = 0;
     for (const n of nodes) {
+      if (n.isDragging) continue;
       n.vx = Math.max(-MAX_SPEED, Math.min(MAX_SPEED, n.vx)) * DAMPING;
       n.vy = Math.max(-MAX_SPEED, Math.min(MAX_SPEED, n.vy)) * DAMPING;
       n.x += n.vx;
@@ -305,7 +312,10 @@ export default function KnowledgeGraphViewer({ bookName }: Props) {
     cam.x += (cam.targetX - cam.x) * 0.1;
     cam.y += (cam.targetY - cam.y) * 0.1;
     cam.scale += (cam.targetScale - cam.scale) * 0.1;
-    setZoomLevel(Math.round(cam.scale * 100) / 100);
+    zoomLevelRef.current = Math.round(cam.scale * 100) / 100;
+    if (zoomLabelRef.current) {
+      zoomLabelRef.current.textContent = `${Math.round(zoomLevelRef.current * 100)}%`;
+    }
 
     ctx.clearRect(0, 0, W, H);
     ctx.fillStyle = "#fafbfc";
@@ -364,16 +374,18 @@ export default function KnowledgeGraphViewer({ bookName }: Props) {
       const r = Math.max(2.5, n.size * baseScale * 0.9);
       const dim = hovered && !hoveredNeighbors.has(n.id);
 
+      ctx.save();
+      if (dim) ctx.globalAlpha = 0.18;
+
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.fillStyle = dim ? "rgba(156,163,175,0.18)" : n.color;
+      ctx.fillStyle = n.color;
       ctx.fill();
       ctx.strokeStyle = dim ? "rgba(255,255,255,0.3)" : "#fff";
       ctx.lineWidth = dim ? 0.5 : 1.5;
       ctx.stroke();
 
       const fontSize = Math.max(7, 10 * baseScale * cam.scale);
-      ctx.fillStyle = dim ? "rgba(55,65,81,0.12)" : "rgba(55,65,81,0.85)";
       ctx.font = `${fontSize}px system-ui, sans-serif`;
       ctx.textAlign = "center";
 
@@ -385,8 +397,10 @@ export default function KnowledgeGraphViewer({ bookName }: Props) {
         ctx.fillRect(cx - ctx.measureText(displayLabel).width / 2 - 3, labelY - fontSize + 1,
           ctx.measureText(displayLabel).width + 6, fontSize + 2);
       }
-      ctx.fillStyle = dim ? "rgba(55,65,81,0.12)" : "rgba(55,65,81,0.85)";
+      ctx.fillStyle = dim ? "rgba(55,65,81,0.20)" : "rgba(55,65,81,0.85)";
       ctx.fillText(displayLabel, cx, labelY);
+
+      ctx.restore();
     }
 
     ctx.restore();
@@ -404,6 +418,37 @@ export default function KnowledgeGraphViewer({ bookName }: Props) {
   };
 
   const getNodeAt = (mx: number, my: number): string | null => {
+    const world = screenToWorld(mx, my);
+    if (!world) return null;
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    const W = rect.width, H = rect.height;
+    const cam = cameraRef.current;
+    const nodes = nodesRef.current;
+
+    // baseScale (without camera zoom) for converting screen-space padding to data-space
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const n of nodes) {
+      if (n.x < minX) minX = n.x; if (n.x > maxX) maxX = n.x;
+      if (n.y < minY) minY = n.y; if (n.y > maxY) maxY = n.y;
+    }
+    const dataW = maxX - minX || 1, dataH = maxY - minY || 1;
+    const baseScale = Math.min(W / dataW, H / dataH, 1.5) * 0.8;
+
+    for (const n of nodes) {
+      const dx = world.x - n.x;
+      const dy = world.y - n.y;
+      // Visual radius in data-space: n.size * 0.45, plus 10px screen padding → data-space
+      const hitR = n.size * 0.45 + 10 / (baseScale * cam.scale);
+      if (dx * dx + dy * dy < hitR * hitR) return n.id;
+    }
+    return null;
+  };
+
+  // ── Convert screen coordinates → world (data-space) coordinates ──
+  // Matches the inverse of render(): dataX = ((screenX-W/2)/cam.scale + W/2 - cam.x - ox) / baseScale
+  const screenToWorld = (mx: number, my: number): { x: number; y: number } | null => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
     const rect = canvas.getBoundingClientRect();
@@ -417,18 +462,46 @@ export default function KnowledgeGraphViewer({ bookName }: Props) {
       if (n.y < minY) minY = n.y; if (n.y > maxY) maxY = n.y;
     }
     const dataW = maxX - minX || 1, dataH = maxY - minY || 1;
-    const baseScale = Math.min(W / dataW, H / dataH, 1.5) * 0.8 * cam.scale;
-    const ox = (W - dataW * baseScale) / 2 - minX * baseScale + cam.x;
-    const oy = (H - dataH * baseScale) / 2 - minY * baseScale + cam.y;
+    const baseScale = Math.min(W / dataW, H / dataH, 1.5) * 0.8;
+    const ox = (W - dataW * baseScale) / 2 - minX * baseScale;
+    const oy = (H - dataH * baseScale) / 2 - minY * baseScale;
 
-    for (const n of nodes) {
-      const cx = n.x * baseScale + ox;
-      const cy = n.y * baseScale + oy;
-      const hitR = Math.max(3, n.size * baseScale * 0.9) + 8;
-      const dx = mx - cx, dy = my - cy;
-      if (dx * dx + dy * dy < hitR * hitR) return n.id;
+    // Undo canvas transform, then undo data-space transform
+    const canvasX = (mx - W / 2) / cam.scale + W / 2 - cam.x;
+    const canvasY = (my - H / 2) / cam.scale + H / 2 - cam.y;
+    return { x: (canvasX - ox) / baseScale, y: (canvasY - oy) / baseScale };
+  };
+
+  // ── Drag: mouseDown / mouseMove / mouseUp ──
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    const id = getNodeAt(mx, my);
+    if (id) {
+      // ── Node drag ──
+      draggedNodeRef.current = id;
+      const node = nodesRef.current.find((n) => n.id === id);
+      if (node) {
+        node.isDragging = true;
+        node.vx = 0;
+        node.vy = 0;
+      }
+    } else {
+      // ── Canvas pan ──
+      isPanningRef.current = true;
+      lastPanPosRef.current = { x: e.clientX, y: e.clientY };
     }
-    return null;
+  };
+
+  const handleMouseUp = () => {
+    isPanningRef.current = false;
+    if (draggedNodeRef.current) {
+      const node = nodesRef.current.find((n) => n.id === draggedNodeRef.current);
+      if (node) node.isDragging = false;
+      draggedNodeRef.current = null;
+    }
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -436,6 +509,32 @@ export default function KnowledgeGraphViewer({ bookName }: Props) {
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+
+    // ── Canvas panning ──
+    if (isPanningRef.current) {
+      const dx = e.clientX - lastPanPosRef.current.x;
+      const dy = e.clientY - lastPanPosRef.current.y;
+      lastPanPosRef.current = { x: e.clientX, y: e.clientY };
+      const cam = cameraRef.current;
+      cam.targetX += dx / cam.scale;
+      cam.targetY += dy / cam.scale;
+      cam.x = cam.targetX;
+      cam.y = cam.targetY;
+      canvas.style.cursor = "grabbing";
+      return;
+    }
+
+    // ── Node drag ──
+    if (draggedNodeRef.current) {
+      const world = screenToWorld(mx, my);
+      if (world) {
+        const node = nodesRef.current.find((n) => n.id === draggedNodeRef.current);
+        if (node) { node.x = world.x; node.y = world.y; }
+      }
+      canvas.style.cursor = "grabbing";
+      return;
+    }
+
     const id = getNodeAt(mx, my);
     hoveredNode.current = id;
     canvas.style.cursor = id ? "pointer" : "grab";
@@ -485,28 +584,80 @@ export default function KnowledgeGraphViewer({ bookName }: Props) {
         setCardLoading(false);
       }
     } else {
-      cameraRef.current.targetScale = 1;
-      cameraRef.current.targetX = 0;
-      cameraRef.current.targetY = 0;
+      // Deselect knowledge card; do NOT reset zoom/pan so the user's viewport stays
       setKnowledgeCard(null);
     }
   };
 
   // ── Navigate to chapter from knowledge card ──
+  // Graph node IDs are synthetic (e.g. "concept-系统科学"), NOT real file paths.
+  // We MUST find the actual chapter by matching the concept label against chapter titles.
   const handleNavigateToSource = () => {
     if (!knowledgeCard) return;
-    const filePath = knowledgeCard.nodeId + ".md";
-    // Direct Zustand mutation — no router.push, no URL change
-    useReaderStore.getState().setChapter(filePath, knowledgeCard.title);
-    useReaderStore.getState().setHighlightQuery(knowledgeCard.title);
+
+    const conceptLabel = knowledgeCard.title;
+    const chapters = useReaderStore.getState().chapters;
+
+    // Search for the source chapter by matching concept label against chapter titles
+    const match = chapters.find((ch) => {
+      const cleanTitle = ch.title.replace(/^\d+_/, "");
+      return ch.title.includes(conceptLabel) || conceptLabel.includes(cleanTitle);
+    });
+
+    if (match) {
+      useReaderStore.getState().setChapter(match.path, match.title);
+    }
+
+    useReaderStore.getState().setHighlightQuery(conceptLabel);
     closeModal();
-    // Scroll reader to top after navigation
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleMouseLeave = () => {
     hoveredNode.current = null;
     tooltipRef.current = null;
+    isPanningRef.current = false;
+    // Release any dragged node
+    if (draggedNodeRef.current) {
+      const node = nodesRef.current.find((n) => n.id === draggedNodeRef.current);
+      if (node) node.isDragging = false;
+      draggedNodeRef.current = null;
+    }
+  };
+
+  // ── Wheel zoom with pointer compensation ──
+  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const W = rect.width, H = rect.height;
+
+    const cam = cameraRef.current;
+    const oldScale = cam.scale;
+    const zoomFactor = e.deltaY < 0 ? 1.12 : 0.88;
+    const newScale = Math.max(0.2, Math.min(4, oldScale * zoomFactor));
+    if (newScale === oldScale) return;
+
+    // Compute pan offset in screenX = worldX * scale + panX convention
+    const panOldX = W / 2 + (cam.x - W / 2) * oldScale;
+    const panOldY = H / 2 + (cam.y - H / 2) * oldScale;
+
+    // Zoom-to-pointer formula
+    const panNewX = mx - (mx - panOldX) * (newScale / oldScale);
+    const panNewY = my - (my - panOldY) * (newScale / oldScale);
+
+    // Convert back to camera x/y
+    cam.targetX = (panNewX - W / 2) / newScale + W / 2;
+    cam.targetY = (panNewY - H / 2) / newScale + H / 2;
+    cam.targetScale = newScale;
+    // Snap immediately for responsive wheel feel (no lerp lag)
+    cam.x = cam.targetX;
+    cam.y = cam.targetY;
+    cam.scale = newScale;
   };
 
   const zoomIn = () => {
@@ -590,8 +741,11 @@ export default function KnowledgeGraphViewer({ bookName }: Props) {
         ref={canvasRef}
         className="w-full h-full block"
         onMouseMove={handleMouseMove}
-        onClick={handleClick}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
+        onClick={handleClick}
+        onWheel={handleWheel}
       />
 
       {/* Zoom controls */}
@@ -599,7 +753,7 @@ export default function KnowledgeGraphViewer({ bookName }: Props) {
         <button onClick={zoomIn} className="p-1.5 rounded-md hover:bg-neutral-100 transition-colors" title="放大">
           <Plus size={14} className="text-neutral-600" />
         </button>
-        <span className="text-[10px] text-neutral-400 w-10 text-center tabular-nums select-none">{Math.round(zoomLevel * 100)}%</span>
+        <span ref={zoomLabelRef} className="text-[10px] text-neutral-400 w-10 text-center tabular-nums select-none">100%</span>
         <button onClick={zoomOut} className="p-1.5 rounded-md hover:bg-neutral-100 transition-colors" title="缩小">
           <Minus size={14} className="text-neutral-600" />
         </button>

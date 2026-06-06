@@ -7,12 +7,16 @@ No database needed. All endpoints are read-only except dictionary (LLM call).
 import os
 import json
 import logging
+import re
 import shutil
 import base64
 import tempfile
 import asyncio
 from pathlib import Path
 from typing import Optional
+
+from .utils.file_ops import atomic_write_json
+from .core.config import DATA_ROOT
 
 from fastapi import APIRouter, HTTPException, Query, BackgroundTasks, Request
 from pydantic import BaseModel
@@ -21,7 +25,6 @@ logger = logging.getLogger("deepread.resource")
 
 resource_router = APIRouter(prefix="/api")
 
-DATA_ROOT = Path(__file__).resolve().parent.parent / "data"
 RAW_ROOT = DATA_ROOT / "raw" / "sources"
 WIKI_ROOT = DATA_ROOT / "wiki"
 
@@ -97,19 +100,30 @@ async def list_books() -> list[dict]:
 
 @resource_router.delete("/books/{book_name}")
 async def delete_book(book_name: str) -> dict:
-    """Delete a book: remove data/raw/sources/<book> and data/wiki/<book>."""
+    """Delete a book: remove data/raw/sources/<book> and data/wiki/<book>.
+
+    Uses ignore_errors=True so partial/corrupt leftovers never block re-upload.
+    Also handles the case where a path is a file (not a directory).
+    """
     raw_dir = RAW_ROOT / book_name
     wiki_dir = WIKI_ROOT / book_name
-    deleted = []
+    deleted: list[str] = []
 
     for d, label in [(raw_dir, "raw"), (wiki_dir, "wiki")]:
-        if d.is_dir():
-            shutil.rmtree(d)
-            deleted.append(label)
+        try:
+            if d.is_dir():
+                shutil.rmtree(d, ignore_errors=True)
+                deleted.append(label)
+            elif d.exists():
+                d.unlink(missing_ok=True)
+                deleted.append(label)
+        except Exception as exc:
+            logger.warning("Delete %s (%s) raised: %s", book_name, label, exc)
 
     if not deleted:
         raise HTTPException(404, f"Book not found: {book_name}")
 
+    logger.info("Deleted book '%s': %s", book_name, ", ".join(deleted))
     return {"deleted": True, "book_name": book_name, "removed": deleted}
 
 
@@ -147,7 +161,7 @@ async def update_book(book_name: str, req: BookUpdateRequest) -> dict:
             except (json.JSONDecodeError, ValueError):
                 pass
         meta["cover_url"] = req.cover_url
-        meta_file.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
+        atomic_write_json(meta_file, meta)
 
     return {"updated": True, "book_name": book_name}
 
@@ -180,7 +194,10 @@ async def get_book_meta(book_name: str) -> dict:
 @resource_router.get("/books/{book_name}/indexing-status")
 async def get_indexing_status(book_name: str) -> dict:
     """Return { status, indexed, total } from .meta.json."""
-    meta_file = WIKI_ROOT / book_name / ".meta.json"
+    # Hardcode the real data root (3 levels up → DeepRead-v2/data)
+    # — the global WIKI_ROOT points to backend/data which indexer_service does not write to.
+    real_data_root = Path(__file__).resolve().parent.parent.parent / "data"
+    meta_file = real_data_root / "wiki" / book_name / ".meta.json"
     if not meta_file.is_file():
         return {"status": "pending", "indexed": 0, "total": 0}
     try:
@@ -195,29 +212,38 @@ async def get_indexing_status(book_name: str) -> dict:
 
 
 # ====================================================================
-# POST /api/books/{book_name}/build_index — force re-index (极速调试通道)
+# POST /api/books/{book_name}/build_index — force re-index
 # ====================================================================
 
 @resource_router.post("/books/{book_name}/build_index")
-async def force_build_index(book_name: str, background_tasks: BackgroundTasks, request: Request) -> dict:
-    """Force-reset indexing status and re-trigger build_book_index as a background task.
+async def force_build_index(book_name: str, background_tasks: BackgroundTasks) -> dict:
+    """Force-reset indexing status and re-trigger build_book_index as a background task."""
+    import json
+    from pathlib import Path
 
-    Useful when the first indexing silently crashed (e.g. missing API key)
-    and the frontend is stuck showing "processing" with no progress.
-    """
-    from .services.indexer_service import build_book_index, _write_meta, _read_meta
+    # Hardcode the real data root — sidestep the global WIKI_ROOT which points to backend/data
+    real_data_root = Path(__file__).resolve().parent.parent.parent / "data"
+    meta_path = real_data_root / "wiki" / book_name / ".meta.json"
 
-    api_key = request.headers.get("x-api-key", "")
+    # 1. Force-reset progress so the frontend exits the stale "processing" deadlock
+    if meta_path.exists():
+        try:
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, ValueError):
+            meta = {}
+        meta["indexing_status"] = "processing"
+        meta["indexed_chapters"] = 0
+        meta_path.parent.mkdir(parents=True, exist_ok=True)
+        atomic_write_json(meta_path, meta)
+    else:
+        meta_path.parent.mkdir(parents=True, exist_ok=True)
+        atomic_write_json(meta_path, {"indexing_status": "processing", "indexed_chapters": 0, "total_chapters": 0})
 
-    # Reset progress
-    meta = _read_meta(book_name)
-    meta["indexing_status"] = "processing"
-    meta["indexed_chapters"] = 0
-    _write_meta(book_name, meta)
-
-    background_tasks.add_task(build_book_index, book_name, api_key)
-    logger.info("Manual index trigger for %s", book_name)
-    return {"message": "后台索引任务已启动", "book_name": book_name}
+    # 2. Fire the background task (same function verified healthy in sandbox tests)
+    print(f"🚀 [API] 接收到构建请求，准备拉起后台任务: {book_name}")
+    from .services.indexer_service import build_book_index
+    background_tasks.add_task(build_book_index, book_name)
+    return {"message": "后台索引任务已发车", "book_name": book_name}
 
 
 # ====================================================================
@@ -379,9 +405,22 @@ async def upload_book(req: UploadRequest, background_tasks: BackgroundTasks, req
     except Exception:
         raise HTTPException(500, "Failed to write temp file")
 
-    # Process via document processor pipeline
+    # ── Derive safe_title early and pre-clean both raw + wiki dirs ──
+    safe_title = re.sub(r'[\\/:*?"<>|]', '_', Path(req.filename).stem.strip()).strip(' .')[:80] or "untitled"
+
+    for stale_dir in [RAW_ROOT / safe_title, WIKI_ROOT / safe_title]:
+        if stale_dir.exists():
+            try:
+                if stale_dir.is_dir():
+                    shutil.rmtree(stale_dir, ignore_errors=True)
+                else:
+                    stale_dir.unlink(missing_ok=True)
+            except Exception as exc:
+                logger.warning("Upload pre-clean of %s failed: %s", stale_dir, exc)
+
+    # Process via document processor — write to the correct data root
     try:
-        result = document_processor.process_document(tmp_path, original_filename=req.filename)
+        result = document_processor.process_document(tmp_path, output_root=str(RAW_ROOT), original_filename=req.filename)
     except Exception as e:
         if tmp_path and os.path.exists(tmp_path):
             os.unlink(tmp_path)

@@ -9,11 +9,12 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-_DATA_ROOT = Path(__file__).parent.parent.parent / "data"
+from app.core.config import DATA_ROOT
+from app.utils.file_ops import atomic_write_json
 
 
 def _chats_dir(book_name: str) -> Path:
-    return _DATA_ROOT / "wiki" / book_name / "chats"
+    return DATA_ROOT / "wiki" / book_name / "chats"
 
 
 def _ensure_dir(path: Path) -> Path:
@@ -80,7 +81,7 @@ def append_message(book_name: str, session_id: str, role: str, content: str) -> 
     data["messages"].append({"role": role, "content": content, "timestamp": now})
     data["updated_at"] = now
 
-    path.write_text(_json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    atomic_write_json(path, data)
 
     return data
 
@@ -97,7 +98,7 @@ def create_session(book_name: str) -> dict:
         "updated_at": now,
     }
     d = _ensure_dir(_chats_dir(book_name))
-    (d / f"{session_id}.json").write_text(_json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    atomic_write_json(d / f"{session_id}.json", data)
     return data
 
 

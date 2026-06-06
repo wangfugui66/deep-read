@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>古希腊的系统思想 · 互动课件</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', 'Helvetica Neue', sans-serif;
+    background: #f8f9fa;
+    color: #1e293b;
+    line-height: 1.6;
+    padding: 2rem 1rem;
+  }
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 32px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.05);
+    padding: 2.5rem 2rem;
+  }
+  h1 {
+    font-size: 2.2rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: #0f172a;
+    margin-bottom: 0.25rem;
+  }
+  .hook {
+    background: #f1f5f9;
+    border-left: 4px solid #3b82f6;
+    padding: 1.2rem 1.5rem;
+    border-radius: 12px;
+    margin: 1.5rem 0 2rem;
+    font-size: 1.05rem;
+    color: #1e293b;
+  }
+  .hook strong { color: #2563eb; }
+  .section-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 2rem 0 1rem;
+    color: #0f172a;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 0.3rem;
+  }
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.2rem;
+    margin: 1.5rem 0;
+  }
+  .concept-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 1.2rem;
+    transition: all 0.15s ease;
+  }
+  .concept-card:hover { border-color: #94a3b8; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
+  .concept-card h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2563eb;
+    margin-bottom: 0.4rem;
+  }
+  .concept-card p { font-size: 0.95rem; color: #334155; }
+  .interactive-box {
+    background: #f1f5f9;
+    border-radius: 20px;
+    padding: 1.8rem 1.5rem;
+    margin: 2rem 0;
+  }
+  .interactive-box h2 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #0f172a;
+  }
+  .quiz-option {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 0.9rem 1.2rem;
+    margin: 0.5rem 0;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: #1e293b;
+  }
+  .quiz-option:hover { border-color: #3b82f6; background: #eff6ff; }
+  .quiz-option.selected { border-color: #2563eb; background: #dbeafe; }
+  .quiz-option.correct { border-color: #16a34a; background: #dcfce7; }
+  .quiz-option.wrong { border-color: #dc2626; background: #fee2e2; }
+  .feedback { margin-top: 0.8rem; padding: 0.7rem 1rem; border-radius: 12px; font-weight: 500; display: none; }
+  .feedback.show { display: block; }
+  .feedback.correct { background: #dcfce7; color: #166534; }
+  .feedback.wrong { background: #fee2e2; color: #991b1b; }
+  .drag-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    justify-content: center;
+    padding: 1rem 0;
+  }
+  .drag-item {
+    background: white;
+    border: 2px solid #cbd5e1;
+    border-radius: 40px;
+    padding: 0.6rem 1.4rem;
+    font-size: 1rem;
+    cursor: grab;
+    user-select: none;
+    transition: all 0.1s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+  }
+  .drag-item:active { cursor: grabbing; opacity: 0.7; }
+  .drag-item.dragging { opacity: 0.5; }
+  .drop-zone {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    min-height: 60px;
+    border: 2px dashed #94a3b8;
+    border-radius: 40px;
+    padding: 0.8rem 1rem;
+    background: #f8fafc;
+    justify-content: center;
+    align-items: center;
+    transition: background 0.2s;
+  }
+  .drop-zone.drag-over { background: #e0f2fe; border-color: #3b82f6; }
+  .drop-zone .drag-item { cursor: default; }
+  .btn {
+    background: #2563eb;
+    border: none;
+    color: white;
+    font-weight: 600;
+    padding: 0.7rem 1.8rem;
+    border-radius: 40px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-top: 1rem;
+  }
+  .btn:hover { background: #1d4ed8; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .flashcard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+  .flashcard {
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 1.5rem 0.8rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  .flashcard:hover { border-color: #3b82f6; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.05); }
+  .flashcard .front { font-weight: 600; font-size: 1.1rem; color: #0f172a; }
+  .flashcard .back { display: none; font-size: 0.95rem; color: #334155; }
+  .flashcard.flipped .front { display: none; }
+  .flashcard.flipped .back { display: block; }
+  .summary-box {
+    background: #f1f5f9;
+    border-radius: 20px;
+    padding: 1.5rem;
+    margin: 2rem 0 1rem;
+  }
+  .summary-box p { margin-bottom: 0.5rem; }
+  .next-steps {
+    background: #eef2ff;
+    border-radius: 20px;
+    padding: 1.2rem 1.5rem;
+    border-left: 4px solid #6366f1;
+  }
+  .next-steps strong { color: #4f46e5; }
+  @media (max-width: 600px) {
+    .container { padding: 1.5rem 1rem; }
+    h1 { font-size: 1.8rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>🏛️ 古希腊的系统思想</h1>
+  <div class="hook">
+    <strong>📖 故事·转折·启示</strong><br>
+    古希腊人仰望星空，问：万物从何而来？<strong>米利都学派</strong>说世界由一种本原构成（水、气、无定）——这是系统思维的萌芽。<strong>但</strong>，如果世界只是单一物质，如何解释变化与秩序？<strong>因此</strong>，从赫拉克利特的逻各斯到亚里士多德的目的论，哲学家们逐步构建起“整体与部分”、“宇宙规律”与“终极目的”的系统框架，为后世科学奠定根基。
+  </div>
+
+  <!-- 核心概念卡片 -->
+  <div class="section-title">🔍 核心概念</div>
+  <div class="card-grid">
+    <div class="concept-card">
+      <h3>整体与部分</h3>
+      <p>整体不是部分的简单相加，部分只有在整体中才有意义。亚里士多德提出“整体大于部分之和”。</p>
+    </div>
+    <div class="concept-card">
+      <h3>宇宙规律 (逻各斯)</h3>
+      <p>赫拉克利特认为万物背后有不变的“逻各斯”——一种理性规律，支配着变化与对立统一。</p>
+    </div>
+    <div class="concept-card">
+      <h3>目的论 (Telos)</h3>
+      <p>亚里士多德认为一切自然事物都有内在目的（telos），发展朝向最终完善，系统具有方向性。</p>
+    </div>
+    <div class="concept-card">
+      <h3>本原 (Arche)</h3>
+      <p>米利都学派寻找宇宙的“本原”：泰勒斯的水、阿那克西美尼的气、阿那克西曼德的“无定”。</p>
+    </div>
+  </div>
+
+  <!-- 互动1: 概念配对选择 (Quiz) -->
+  <div class="interactive-box" id="quiz1">
+    <h2>🧪 互动练习 1 · 思想配对</h2>
+    <p style="margin-bottom:0.8rem; color:#334155;">哪位哲学家最强调“整体大于部分之和”以及目的论？</p>
+    <div id="quizOptions">
+      <button class="quiz-option" data-answer="wrong">泰勒斯</button>
+      <button class="quiz-option" data-answer="wrong">赫拉克利特</button>
+      <button class="quiz-option" data-answer="correct">亚里士多德</button>
+      <button class="quiz-option" data-answer="wrong">阿那克西曼德</button>
+    </div>
+    <div id="quizFeedback" class="feedback"></div>
+    <button class="btn" id="resetQuiz1" style="background:#64748b;">重置</button>
+  </div>
+
+  <!-- 互动2: 拖拽排序 (按时间顺序排列学派/人物) -->
+  <div class="interactive-box" id="dragBox">
+    <h2>🧩 互动练习 2 · 历史排序</h2>
+    <p style="margin-bottom:0.5rem; color:#334155;">将下列思想流派按历史顺序排列（最早→最晚）：</p>
+    <div class="drag-container" id="dragContainer">
+      <!-- 这些项会被 JS 打乱渲染 -->
+    </div>
+    <div class="drop-zone" id="dropZone">
+      <span style="color:#94a3b8; font-style:italic;">将项目拖放到此处排序</span>
+    </div>
+    <div id="dragFeedback" class="feedback" style="margin-top:0.8rem;"></div>
+    <button class="btn" id="checkOrderBtn" style="background:#16a34a;">检查顺序</button>
+    <button class="btn" id="resetDragBtn" style="background:#64748b;">重置</button>
+  </div>
+
+  <!-- 互动3: 可点击翻转卡片 (概念回顾) -->
+  <div class="section-title">📇 翻转卡片 · 点我复习</div>
+  <div class="flashcard-grid" id="flashcardGrid">
+    <div class="flashcard" data-side="front">
+      <div class="front">🌊 米利都学派</div>
+      <div class="back">泰勒斯(水)、阿那克西美尼(气)、阿那克西曼德(无定) — 寻找宇宙本原。</div>
+    </div>
+    <div class="flashcard" data-side="front">
+      <div class="front">🔥 赫拉克利特</div>
+      <div class="back">万物皆流变，但背后有不变的逻各斯（规律）。</div>
+    </div>
+    <div class="flashcard" data-side="front">
+      <div class="front">🐚 亚里士多德</div>
+      <div class="back">整体大于部分之和；目的论：万物有内在目的（telos）。</div>
+    </div>
+    <div class="flashcard" data-side="front">
+      <div class="front">🌀 系统思想</div>
+      <div class="back">整体与部分的关系、宇宙规律、目的论 — 古希腊的系统思维萌芽。</div>
+    </div>
+  </div>
+
+  <!-- 总结 + 下一步 -->
+  <div class="summary-box">
+    <div class="section-title" style="border-bottom:none; margin-top:0;">📌 总结</div>
+    <p>古希腊哲学从米利都学派追问“本原”开始，逐步发展出对<strong>整体与部分</strong>、<strong>宇宙规律（逻各斯）</strong>以及<strong>目的论</strong>的深刻思考。这些思想构成了西方系统思维的源头，影响了后世科学、哲学与系统论。</p>
+  </div>
+  <div class="next-steps">
+    <strong>🚀 下一步建议：</strong> 对比阅读柏拉图的“理念论”与亚里士多德的“目的论”，思考整体论与还原论的早期张力。也可以进一步探索斯多葛学派的世界理性（逻各斯）如何继承赫拉克利特。
+  </div>
+</div>
+
+<script>
+(function() {
+  // ---------- 互动1: 概念配对 ----------
+  const quizOptions = document.querySelectorAll('#quizOptions .quiz-option');
+  const quizFeedback = document.getElementById('quizFeedback');
+  let quizAnswered = false;
+
+  function resetQuiz1() {
+    quizOptions.forEach(opt => {
+      opt.classList.remove('selected', 'correct', 'wrong');
+      opt.disabled = false;
+    });
+    quizFeedback.classList.remove('show', 'correct', 'wrong');
+    quizFeedback.textContent = '';
+    quizAnswered = false;
+  }
+
+  quizOptions.forEach(opt => {
+    opt.addEventListener('click', function() {
+      if (quizAnswered) return;
+      quizAnswered = true;
+      // disable all
+      quizOptions.forEach(o => o.disabled = true);
+      // mark selected
+      this.classList.add('selected');
+      const isCorrect = this.dataset.answer === 'correct';
+      if (isCorrect) {
+        this.classList.add('correct');
+        quizFeedback.textContent = '✅ 正确！亚里士多德在《形而上学》中提出“整体大于部分之和”，并发展出目的论。';
+        quizFeedback.className = 'feedback show correct';
+      } else {
+        this.classList.add('wrong');
+        quizFeedback.textContent = '❌ 再想想。亚里士多德最强调整体与部分的关系以及目的论。';
+        quizFeedback.className = 'feedback show wrong';
+      }
+    });
+  });
+
+  document.getElementById('resetQuiz1').addEventListener('click', resetQuiz1);
+
+  // ---------- 互动2: 拖拽排序 ----------
+  const correctOrder = ['米利都学派', '赫拉克利特', '亚里士多德'];
+  let currentItems = [];
+  let draggedEl = null;
+
+  const dragContainer = document.getElementById('dragContainer');
+  const dropZone = document.getElementById('dropZone');
+  const dragFeedback = document.getElementById('dragFeedback');
+  const checkBtn = document.getElementById('checkOrderBtn');
+  const resetDragBtn = document.getElementById('resetDragBtn');
+
+  function shuffleArray(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function renderDragItems(order) {
+    // clear
+    dragContainer.innerHTML = '';
+    dropZone.innerHTML = '';
+    // create draggable items
+    order.forEach(text => {
+      const div = document.createElement('div');
+      div.className = 'drag-item';
+      div.textContent = text;
+      div.draggable = true;
+      div.addEventListener('dragstart', handleDragStart);
+      div.addEventListener('dragend', handleDragEnd);
+      dragContainer.appendChild(div);
+    });
+    currentItems = [...order];
+  }
+
+  // initial random
+  const shuffled = shuffleArray([...correctOrder]);
+  renderDragItems(shuffled);
+
+  function handleDragStart(e) {
+    draggedEl = this;
+    this.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    // allow drop
+  }
+
+  function handleDragEnd(e) {
+    this.classList.remove('dragging');
+    // remove drag-over from dropzone
+    dropZone.classList.remove('drag-over');
+    // if item was dropped in dropZone, we handle in drop event
+  }
+
+  // drag over drop zone
+  dropZone.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    this.classList.add('drag-over');
+  });
+
+  dropZone.addEventListener('dragleave', function(e) {
+    this.classList.remove('drag-over');
+  });
+
+  dropZone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    this.classList.remove('drag-over');
+    if (!draggedEl) return;
+    // clone the dragged element and remove from original
+    const clone = draggedEl.cloneNode(true);
+    clone.draggable = false; // can't drag again from drop zone (simplify)
+    clone.classList.remove('dragging');
+    // remove original from container
+    draggedEl.remove();
+    // add to drop zone
+    this.appendChild(clone);
+    // if container is empty, show placeholder? we handle via css
+    // update currentItems
+    const itemsInDrop = [];
+    dropZone.querySelectorAll('.drag-item').forEach(el => itemsInDrop.push(el.textContent));
+    const itemsInContainer = [];
+    dragContainer.querySelectorAll('.drag-item').forEach(el => itemsInContainer.push(el.textContent));
+    currentItems = [...itemsInContainer, ...itemsInDrop];
+    draggedEl = null;
+  });
+
+  // also allow drag items from container to container? we only allow one-way: container -> dropZone.
+  // For simplicity, reset will restore.
+
+  function checkOrder() {
+    const itemsInDrop = [];
+    dropZone.querySelectorAll('.drag-item').forEach(el => itemsInDrop.push(el.textContent));
+    const itemsInContainer = [];
+    dragContainer.querySelectorAll('.drag-item').forEach(el => itemsInContainer.push(el.textContent));
+    const allItems = [...itemsInContainer, ...itemsInDrop];
+    // must have exactly 3 items and all in drop zone
+    if (allItems.length !== 3 || itemsInContainer.length > 0) {
+      dragFeedback.textContent = '⚠️ 请将所有三项拖放到下方区域（按时间顺序排列）。';
+      dragFeedback.className = 'feedback show wrong';
+      return;
+    }
+    // check order
+    let correct = true;
+    for (let i = 0; i < 3; i++) {
+      if (itemsInDrop[i] !== correctOrder[i]) {
+        correct = false;
+        break;
+      }
+    }
+    if (correct) {
+      dragFeedback.textContent = '✅ 完美！米利都学派 → 赫拉克利特 → 亚里士多德（时间顺序）。';
+      dragFeedback.className = 'feedback show correct';
+    } else {
+      dragFeedback.textContent = '❌ 顺序不对。提示：米利都学派最早（约前6世纪），赫拉克利特稍晚（前5世纪），亚里士多德（前4世纪）。';
+      dragFeedback.className = 'feedback show wrong';
+    }
+  }
+
+  function resetDrag() {
+    // clear all
+    dragContainer.innerHTML = '';
+    dropZone.innerHTML = '';
+    dragFeedback.className = 'feedback';
+    dragFeedback.textContent = '';
+    const newShuffled = shuffleArray([...correctOrder]);
+    renderDragItems(newShuffled);
+  }
+
+  checkBtn.addEventListener('click', checkOrder);
+  resetDragBtn.addEventListener('click', resetDrag);
+
+  // ---------- 互动3: 翻转卡片 ----------
+  const flashcards = document.querySelectorAll('.flashcard');
+  flashcards.forEach(card => {
+    card.addEventListener('click', function() {
+      this.classList.toggle('flipped');
+    });
+  });
+
+})();
+</script>
+</body>
+</html>

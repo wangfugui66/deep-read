@@ -9,9 +9,9 @@ import os
 import re
 from pathlib import Path
 
-# ── DATA_ROOT: go up 3 dirs from app/services/ → project root, then data/ ──
-DATA_ROOT = Path(__file__).resolve().parent.parent.parent / "data"
-
+from app.core.config import DATA_ROOT
+from app.utils.file_ops import atomic_write_json
+from .indexer_service import load_chapters_index
 
 # ====================================================================
 # Robust LLM JSON extractor — handles markdown fences, stray text, etc.
@@ -206,10 +206,19 @@ async def generate_skeleton(
     if not chapters:
         return {"status": "failed", "error": "No chapters found in raw sources."}
 
-    # Build chapter list string for prompt
+    # Build enriched chapter list string for prompt — inject summary + tags from index
+    index_data = load_chapters_index(book_name)
     chapter_lines = []
-    for ch in chapters:
-        chapter_lines.append(f"- `{ch['file']}` | {ch['title']} | {ch['word_count']}字")
+    for i, ch in enumerate(chapters, 1):
+        rel_path = ch["file"]
+        idx = index_data.get(rel_path, {})
+        summary = idx.get("summary", "")
+        tags = idx.get("tags", [])
+        tags_str = ", ".join(tags) if tags else "(未索引)"
+        summary_str = summary if summary else "(未索引)"
+        chapter_lines.append(
+            f"[{i}] 标题: {ch['title']} | 路径: {rel_path} | 字数: {ch['word_count']}字 | 标签: {tags_str} | 摘要: {summary_str}"
+        )
     chapter_list = "\n".join(chapter_lines)
 
     # Compute Task 4 word budget: daily_minutes * planned_days * 500
@@ -295,11 +304,11 @@ async def generate_skeleton(
         wc_map = {ch["file"]: ch["word_count"] for ch in chapters}
 
         def _enforce_min_content(ch_item: dict) -> None:
-            """Mutate in place: if strategy=精读 but content < 150 chars, demote to 略读."""
+            """Mutate in place: if strategy=精读 but content < 300 chars, demote to 略读."""
             if ch_item.get("strategy", "") == "精读":
                 fp = ch_item.get("file_path", "")
                 wc = wc_map.get(fp, 9999)  # if unknown, assume large enough
-                if wc < 150:
+                if wc < 300:
                     ch_item["strategy"] = "略读"
                     ch_item["advice"] = "篇章结构，无实质内容"
 
@@ -311,10 +320,7 @@ async def generate_skeleton(
 
         # Write to file
         toc_path = wiki_dir / "dynamic_toc.json"
-        toc_path.write_text(
-            _json.dumps(result_data, ensure_ascii=False, indent=2),
-            encoding="utf-8",
-        )
+        atomic_write_json(toc_path, result_data)
 
         return {
             "status": "completed",

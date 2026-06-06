@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统论的基本规律 — 互动课件</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
+            background: #f6f9fc;
+            color: #1a2a3a;
+            line-height: 1.7;
+            padding: 2rem 1rem;
+        }
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 2rem;
+            box-shadow: 0 20px 40px -12px rgba(0,20,40,0.15);
+            padding: 2.5rem 2rem;
+        }
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #0b3b5c;
+            letter-spacing: -0.01em;
+            margin-bottom: 0.25rem;
+            border-left: 6px solid #2a9d8f;
+            padding-left: 1.2rem;
+        }
+        .subhead {
+            color: #3a5a7a;
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            padding-left: 1.8rem;
+            opacity: 0.8;
+        }
+        .hook {
+            background: #e8f4f0;
+            border-radius: 1.5rem;
+            padding: 1.6rem 2rem;
+            margin-bottom: 2.5rem;
+            border-left: 6px solid #2a9d8f;
+            font-size: 1.05rem;
+        }
+        .hook strong { color: #0b3b5c; }
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #0b3b5c;
+            margin: 2.2rem 0 1rem 0;
+            padding-bottom: 0.3rem;
+            border-bottom: 2px solid #d0e2ed;
+        }
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1.2rem;
+            margin: 1.5rem 0;
+        }
+        .card {
+            background: #f8fafc;
+            border-radius: 1.2rem;
+            padding: 1.4rem 1.2rem;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+            border: 1px solid #e6edf2;
+            transition: transform 0.1s ease;
+        }
+        .card h3 {
+            font-size: 1.1rem;
+            color: #1e4a6b;
+            margin-bottom: 0.5rem;
+        }
+        .card p { font-size: 0.95rem; color: #2c4056; }
+        .interactive-box {
+            background: #f2f7fb;
+            border-radius: 1.8rem;
+            padding: 1.8rem 1.8rem 2rem;
+            margin: 2rem 0;
+            border: 1px solid #cde0eb;
+        }
+        .interactive-box h2 {
+            font-size: 1.3rem;
+            color: #0b3b5c;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .btn {
+            background: #2a9d8f;
+            color: white;
+            border: none;
+            padding: 0.6rem 1.6rem;
+            border-radius: 2rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.15s;
+            font-size: 0.95rem;
+            display: inline-block;
+        }
+        .btn:hover { background: #1f7a6f; transform: scale(0.98); }
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #2a9d8f;
+            color: #2a9d8f;
+        }
+        .btn-outline:hover { background: #e8f4f0; }
+        .feedback {
+            margin-top: 0.8rem;
+            padding: 0.6rem 1rem;
+            border-radius: 1rem;
+            font-weight: 500;
+            background: #eef3f7;
+            color: #1a2a3a;
+            min-height: 2.6rem;
+        }
+        .feedback.correct { background: #d4edda; color: #155724; }
+        .feedback.wrong { background: #f8d7da; color: #721c24; }
+        .feedback.info { background: #d1ecf1; color: #0c5460; }
+        .drag-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.7rem;
+            margin: 1rem 0;
+            min-height: 4rem;
+            padding: 0.8rem;
+            background: white;
+            border-radius: 1.2rem;
+            border: 2px dashed #b8cfde;
+        }
+        .drag-item {
+            background: #e2edf5;
+            padding: 0.5rem 1.2rem;
+            border-radius: 2rem;
+            cursor: grab;
+            user-select: none;
+            font-weight: 500;
+            display: inline-block;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+            transition: 0.1s;
+            border: 1px solid #c3d7e5;
+        }
+        .drag-item:active { cursor: grabbing; opacity: 0.7; }
+        .drag-target {
+            background: #eef5fa;
+            border-radius: 1.2rem;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border: 2px dashed #8bb3cc;
+            min-height: 3.6rem;
+            transition: background 0.2s;
+        }
+        .drag-target.drag-over { background: #d4e7f0; border-color: #2a9d8f; }
+        .quiz-option {
+            display: block;
+            background: white;
+            border: 2px solid #d5e3ec;
+            border-radius: 1rem;
+            padding: 0.7rem 1.2rem;
+            margin: 0.5rem 0;
+            cursor: pointer;
+            transition: 0.1s;
+            font-size: 0.95rem;
+        }
+        .quiz-option:hover { border-color: #2a9d8f; background: #f2faf8; }
+        .quiz-option.selected { border-color: #2a9d8f; background: #e0f2ee; }
+        .quiz-option.correct-answer { border-color: #28a745; background: #d4edda; }
+        .quiz-option.wrong-answer { border-color: #dc3545; background: #f8d7da; }
+        .summary-box {
+            background: #e8f0f6;
+            border-radius: 1.5rem;
+            padding: 1.8rem 2rem;
+            margin-top: 2.5rem;
+        }
+        .summary-box h2 { color: #0b3b5c; margin-bottom: 0.8rem; }
+        .next-steps {
+            margin-top: 1.2rem;
+            background: white;
+            border-radius: 1rem;
+            padding: 1rem 1.5rem;
+            border-left: 4px solid #2a9d8f;
+        }
+        .tag {
+            display: inline-block;
+            background: #d0e2ed;
+            padding: 0.2rem 0.9rem;
+            border-radius: 2rem;
+            font-size: 0.8rem;
+            color: #1a3b4e;
+            margin-right: 0.3rem;
+        }
+        @media (max-width: 600px) {
+            .container { padding: 1.5rem 1rem; }
+            h1 { font-size: 1.6rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>系统论的基本规律</h1>
+    <div class="subhead">结构 · 反馈 · 竞争 · 涨落 · 优化</div>
+
+    <!-- ABT Hook -->
+    <div class="hook">
+        <strong>📖 你发现了吗？</strong> 任何系统——从细胞到城市——都在不断变化和维持秩序。<br>
+        <strong>And</strong> 它们遵循着一些隐藏的规律：结构决定功能，信息调节稳定，竞争与协同共存，微小的涨落催生新秩序，系统在演化中持续优化。<br>
+        <strong>But</strong> 这些规律并非孤立运作，而是相互交织，共同塑造系统的命运。<br>
+        <strong>Therefore</strong> 理解这五大基本规律，就等于掌握了分析复杂世界的思维钥匙。
+    </div>
+
+    <!-- 关键概念卡片 -->
+    <div class="section-title">🔍 五大规律速览</div>
+    <div class="card-grid">
+        <div class="card"><h3>① 结构功能相关律</h3><p>系统的结构与功能相互关联、相互转化。结构是功能的基础，功能反作用于结构。</p></div>
+        <div class="card"><h3>② 信息反馈律</h3><p>信息反馈调控影响系统稳定性。正反馈放大偏离，负反馈维持平衡，源于信息论与控制论。</p></div>
+        <div class="card"><h3>③ 竞争协同律</h3><p>系统内要素间及系统与环境间，通过竞争与协同的对立统一推动演化发展，是自组织的核心动力。</p></div>
+        <div class="card"><h3>④ 涨落有序律</h3><p>系统通过涨落（随机扰动）达到有序，从无序向高级发展，是自组织的基本途径（耗散结构）。</p></div>
+        <div class="card"><h3>⑤ 优化演化律</h3><p>系统在演化中实现优化，推动发展进化，从古希腊到现代系统科学均有体现。</p></div>
+    </div>
+
+    <!-- 互动1: 拖拽配对 (结构功能相关律 + 信息反馈律) -->
+    <div class="interactive-box" id="dragMatch">
+        <h2>🧩 互动一：拖拽配对</h2>
+        <p style="margin-bottom:0.5rem;">将左边的规律名称拖到右边对应的描述上（每个描述只能匹配一个规律）。</p>
+        <div style="display:flex; flex-wrap:wrap; gap:1.5rem; margin-top:1rem;">
+            <div style="flex:1; min-width:140px;">
+                <div class="drag-area" id="dragItems" style="flex-direction:column; align-items:stretch; border:none; background:transparent; padding:0;">
+                    <div class="drag-item" draggable="true" data-id="law1">结构功能相关律</div>
+                    <div class="drag-item" draggable="true" data-id="law2">信息反馈律</div>
+                    <div class="drag-item" draggable="true" data-id="law3">竞争协同律</div>
+                    <div class="drag-item" draggable="true" data-id="law4">涨落有序律</div>
+                    <div class="drag-item" draggable="true" data-id="law5">优化演化律</div>
+                </div>
+            </div>
+            <div style="flex:2; min-width:200px;">
+                <div class="drag-target" data-target="desc1"><strong>描述A</strong> 系统通过随机扰动达到有序，从无序向高级发展</div>
+                <div class="drag-target" data-target="desc2"><strong>描述B</strong> 正负反馈调控影响系统稳定性</div>
+                <div class="drag-target" data-target="desc3"><strong>描述C</strong> 结构与功能相互关联和转化</div>
+                <div class="drag-target" data-target="desc4"><strong>描述D</strong> 系统在演化中实现优化，推动发展进化</div>
+                <div class="drag-target" data-target="desc5"><strong>描述E</strong> 竞争与协同的对立统一推动演化</div>
+            </div>
+        </div>
+        <div style="display:flex; gap:0.8rem; flex-wrap:wrap; margin-top:1rem;">
+            <button class="btn" id="checkDragBtn">检查配对</button>
+            <button class="btn btn-outline" id="resetDragBtn">重置</button>
+        </div>
+        <div class="feedback" id="dragFeedback">将左侧项目拖到右侧目标框上。</div>
+    </div>
+
+    <!-- 互动2: 概念选择题 (竞争协同律 + 涨落有序律) -->
+    <div class="interactive-box" id="quizBox">
+        <h2>📝 互动二：概念检验</h2>
+        <p style="margin-bottom:0.8rem;"><strong>题目：</strong>根据系统论，以下哪一项最准确地描述了“竞争协同律”与“涨落有序律”的关系？</p>
+        <div id="quizOptions">
+            <div class="quiz-option" data-index="0">A. 两者无关，竞争协同只涉及内部要素，涨落只涉及外部环境。</div>
+            <div class="quiz-option" data-index="1">B. 竞争协同是系统演化的核心动力，而涨落是系统达到有序的具体途径，二者共同推动自组织。</div>
+            <div class="quiz-option" data-index="2">C. 涨落有序律取代了竞争协同律，因为现代系统科学更强调随机性。</div>
+            <div class="quiz-option" data-index="3">D. 竞争协同律只适用于生物系统，涨落有序律只适用于物理系统。</div>
+        </div>
+        <button class="btn" id="submitQuizBtn">提交答案</button>
+        <div class="feedback" id="quizFeedback">选择一个选项，然后点击提交。</div>
+    </div>
+
+    <!-- 互动3: 排序练习 (优化演化律 — 历史脉络) -->
+    <div class="interactive-box" id="sortBox">
+        <h2>🔄 互动三：排序挑战</h2>
+        <p style="margin-bottom:0.5rem;">将下列有关“优化演化律”的历史表述按时间顺序排列（最早在上）。</p>
+        <div id="sortContainer" style="display:flex; flex-direction:column; gap:0.5rem; margin:1rem 0;">
+            <div class="drag-item" draggable="true" style="cursor:grab; text-align:center; background:#dce8f0;" data-sort="1">现代系统科学：优化演化律成为系统科学基本规律</div>
+            <div class="drag-item" draggable="true" style="cursor:grab; text-align:center; background:#dce8f0;" data-sort="2">古希腊哲学：隐含系统优化思想</div>
+            <div class="drag-item" draggable="true" style="cursor:grab; text-align:center; background:#dce8f0;" data-sort="3">19世纪进化论：推动系统演化与优化观念</div>
+        </div>
+        <div style="display:flex; gap:0.8rem; flex-wrap:wrap;">
+            <button class="btn" id="checkSortBtn">检查顺序</button>
+            <button class="btn btn-outline" id="resetSortBtn">重置顺序</button>
+        </div>
+        <div class="feedback" id="sortFeedback">拖动项目调整顺序，最早在上。</div>
+    </div>
+
+    <!-- 总结 + 下一步 -->
+    <div class="summary-box">
+        <h2>✅ 总结</h2>
+        <p>系统论五大基本规律——<strong>结构与功能相关律、信息反馈律、竞争协同律、涨落有序律、优化演化律</strong>——共同揭示了系统存在与演化的普遍联系。它们不是孤立的教条，而是分析复杂系统（从细胞到社会）的思维工具。</p>
+        <div class="next-steps">
+            <strong>🚀 下一步建议：</strong> 选择一个你熟悉的系统（例如你的学习计划、一个团队、或一个生态系统），尝试用这五个规律去分析它：它的结构是什么？如何反馈？竞争与协同体现在哪里？哪些涨落带来了变化？它正在如何优化？
+        </div>
+        <div style="margin-top:1rem;">
+            <span class="tag">系统论</span>
+            <span class="tag">基本规律</span>
+            <span class="tag">辩证法</span>
+            <span class="tag">自组织</span>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    'use strict';
+
+    // ---------- 拖拽配对 (互动一) ----------
+    const dragItems = document.querySelectorAll('#dragItems .drag-item');
+    const targets = document.querySelectorAll('.drag-target');
+    const dragFeedback = document.getElementById('dragFeedback');
+    const checkDragBtn = document.getElementById('checkDragBtn');
+    const resetDragBtn = document.getElementById('resetDragBtn');
+
+    // 存储配对: data-id -> data-target
+    let pairings = {};  // e.g. { law1: 'desc1', law2: 'desc2', ... }
+
+    // 初始化配对为空
+    function initPairings() {
+        pairings = {};
+        // 清空所有target内部额外内容 (保留strong和文本)
+        targets.forEach(t => {
+            // 移除可能添加的标签
+            const extra = t.querySelector('.dropped-label');
+            if (extra) extra.remove();
+        });
+        // 显示所有drag-item
+        dragItems.forEach(item => item.style.display = 'inline-block');
+        dragFeedback.textContent = '将左侧项目拖到右侧目标框上。';
+        dragFeedback.className = 'feedback';
+    }
+
+    // 拖拽事件
+    let draggedId = null;
+
+    dragItems.forEach(item => {
+        item.addEventListener('dragstart', function(e) {
+            draggedId = this.dataset.id;
+            e.dataTransfer.setData('text/plain', this.dataset.id);
+            this.style.opacity = '0.5';
+        });
+        item.addEventListener('dragend', function(e) {
+            this.style.opacity = '1';
+        });
+    });
+
+    targets.forEach(target => {
+        target.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('drag-over');
+        });
+        target.addEventListener('dragleave', function(e) {
+            this.classList.remove('drag-over');
+        });
+        target.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+            const lawId = e.dataTransfer.getData('text/plain');
+            if (!lawId) return;
+            const targetId = this.dataset.target;
+            // 检查是否已经被其他规律占用 (但允许覆盖)
+            // 先清除之前占用同一个target的配对
+            for (let key in pairings) {
+                if (pairings[key] === targetId) {
+                    delete pairings[key];
+                    // 显示对应的drag-item
+                    const prevItem = document.querySelector(`.drag-item[data-id="${key}"]`);
+                    if (prevItem) prevItem.style.display = 'inline-block';
+                }
+            }
+            // 如果这个law已经配对了另一个target, 先删除旧配对
+            if (pairings[lawId]) {
+                const oldTarget = document.querySelector(`.drag-target[data-target="${pairings[lawId]}"]`);
+                if (oldTarget) {
+                    const oldLabel = oldTarget.querySelector('.dropped-label');
+                    if (oldLabel) oldLabel.remove();
+                }
+            }
+            // 记录新配对
+            pairings[lawId] = targetId;
+            // 隐藏被拖动的项
+            const draggedEl = document.querySelector(`.drag-item[data-id="${lawId}"]`);
+            if (draggedEl) draggedEl.style.display = 'none';
+            // 在target上添加标签
+            const labelSpan = document.createElement('span');
+            labelSpan.className = 'dropped-label';
+            labelSpan.style.cssText = 'display:inline-block; background:#2a9d8f; color:white; border-radius:2rem; padding:0.1rem 0.8rem; margin-left:0.5rem; font-size:0.8rem;';
+            // 获取规律名称
+            const lawName = draggedEl ? draggedEl.textContent : lawId;
+            labelSpan.textContent = '✓ ' + lawName;
+            // 移除旧的label
+            const oldLabel = this.querySelector('.dropped-label');
+            if (oldLabel) oldLabel.remove();
+            this.appendChild(labelSpan);
+            dragFeedback.textContent = `已放置「${lawName}」到目标。`;
+            dragFeedback.className = 'feedback info';
+        });
+    });
+
+    // 检查配对
+    function checkDragMatch() {
+        // 正确答案: law1->desc3, law2->desc2, law3->desc5, law4->desc1, law5->desc4
+        const correctMap = { law1: 'desc3', law2: 'desc2', law3: 'desc5', law4: 'desc1', law5: 'desc4' };
+        let correctCount = 0;
+        let total = Object.keys(correctMap).length;
+        for (let law in correctMap) {
+            if (pairings[law] === correctMap[law]) {
+                correctCount++;
+            }
+        }
+        if (correctCount === total) {
+            dragFeedback.textContent = '🎉 完全正确！所有配对都吻合系统论规律。';
+            dragFeedback.className = 'feedback correct';
+        } else {
+            dragFeedback.textContent = `配对完成 ${correctCount}/${total} 正确。再调整一下？提示：涨落有序→描述A，信息反馈→描述B，结构功能→描述C，优化演化→描述D，竞争协同→描述E。`;
+            dragFeedback.className = 'feedback wrong';
+        }
+    }
+
+    checkDragBtn.addEventListener('click', checkDragMatch);
+    resetDragBtn.addEventListener('click', function() {
+        initPairings();
+        // 重新显示所有drag-item
+        dragItems.forEach(item => item.style.display = 'inline-block');
+        targets.forEach(t => {
+            const lbl = t.querySelector('.dropped-label');
+            if (lbl) lbl.remove();
+        });
+        dragFeedback.textContent = '已重置，可以重新拖拽配对。';
+        dragFeedback.className = 'feedback info';
+    });
+
+    // 初始化
+    initPairings();
+
+    // ---------- 选择题 (互动二) ----------
+    const quizOptions = document.querySelectorAll('#quizOptions .quiz-option');
+    const submitQuizBtn = document.getElementById('submitQuizBtn');
+    const quizFeedback = document.getElementById('quizFeedback');
+    let selectedIndex = null;
+
+    quizOptions.forEach(opt => {
+        opt.addEventListener('click', function() {
+            quizOptions.forEach(o => o.classList.remove('selected'));
+            this.classList.add('selected');
+            selectedIndex = parseInt(this.dataset.index);
+            quizFeedback.textContent = `你选择了选项 ${String.fromCharCode(65 + selectedIndex)}。点击提交。`;
+            quizFeedback.className = 'feedback info';
+        });
+    });
+
+    submitQuizBtn.addEventListener('click', function() {
+        if (selectedIndex === null) {
+            quizFeedback.textContent = '请先选择一个选项。';
+            quizFeedback.className = 'feedback wrong';
+            return;
+        }
+        // 正确答案索引1 (B)
+        const correctIdx = 1;
+        quizOptions.forEach(o => o.classList.remove('correct-answer', 'wrong-answer'));
+        if (selectedIndex === correctIdx) {
+            quizOptions[correctIdx].classList.add('correct-answer');
+            quizFeedback.textContent = '✅ 正确！竞争协同是核心动力，涨落是有序途径，二者共同推动自组织演化。';
+            quizFeedback.className = 'feedback correct';
+        } else {
+            quizOptions[selectedIndex].classList.add('wrong-answer');
+            quizOptions[correctIdx].classList.add('correct-answer');
+            quizFeedback.textContent = '❌ 再想想。正确答案是B：竞争协同是系统演化的核心动力，涨落是系统达到有序的具体途径。';
+            quizFeedback.className = 'feedback wrong';
+        }
+    });
+
+    // ---------- 排序 (互动三) ----------
+    const sortContainer = document.getElementById('sortContainer');
+    const sortFeedback = document.getElementById('sortFeedback');
+    const checkSortBtn = document.getElementById('checkSortBtn');
+    const resetSortBtn = document.getElementById('resetSortBtn');
+
+    // 初始顺序 (乱序)
+    let sortItems = Array.from(sortContainer.querySelectorAll('.drag-item'));
+    // 打乱初始顺序 (但保留data-sort)
+    function shuffleArray(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
+    function renderSortItems(items) {
+        sortContainer.innerHTML = '';
+        items.forEach(item => sortContainer.appendChild(item));
+    }
+
+    // 初始随机排序
+    let currentSortItems = shuffleArray([...sortItems]);
+    renderSortItems(currentSortItems);
+
+    // 使可拖拽排序
+    sortContainer.addEventListener('dragstart', function(e) {
+        const item = e.target.closest('.drag-item');
+        if (!item) return;
+        e.dataTransfer.setData('text/plain', 'sort');
+        item.style.opacity = '0.5';
+    });
+    sortContainer.addEventListener('dragend', function(e) {
+        const item = e.target.closest('.drag-item');
+        if (item) item.style.opacity = '1';
+    });
+    sortContainer.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        const dragging = document.querySelector('.drag-item[style*="opacity: 0.5"]');
+        if (!dragging) return;
+        const afterElement = getDragAfterElement(sortContainer, e.clientY);
+        if (afterElement == null) {
+            sortContainer.appendChild(dragging);
+        } else {
+            sortContainer.insertBefore(dragging, afterElement);
+        }
+    });
+
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.drag-item:not([style*="opacity: 0.5"])')];
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    function checkSortOrder() {
+        const items = sortContainer.querySelectorAll('.drag-item');
+        const order = Array.from(items).map(item => parseInt(item.dataset.sort));
+        // 正确顺序: [2, 3, 1]  (古希腊->进化论->现代系统科学) 注意data-sort: 1=现代,2=古希腊,3=进化论
+        // 最早: 古希腊(2), 然后进化论(3), 然后现代(1)
+        const correct = [2, 3, 1];
+        let isCorrect = order.length === correct.length && order.every((val, idx) => val === correct[idx]);
+        if (isCorrect) {
+            sortFeedback.textContent = '🎉 正确！历史脉络：古希腊哲学 → 19世纪进化论 → 现代系统科学。';
+            sortFeedback.className = 'feedback correct';
+        } else {
+            sortFeedback.textContent = '🔄 顺序不对。提示：最早是古希腊思想，然后是进化论，最后是现代系统科学。';
+            sortFeedback.className = 'feedback wrong';
+        }
+    }
+
+    checkSortBtn.addEventListener('click', checkSortOrder);
+    resetSortBtn.addEventListener('click', function() {
+        // 重置为乱序
+        let items = Array.from(sortContainer.querySelectorAll('.drag-item'));
+        let shuffled = shuffleArray(items);
+        renderSortItems(shuffled);
+        sortFeedback.textContent = '顺序已重置，请重新排列。';
+        sortFeedback.className = 'feedback info';
+    });
+
+    // 初始反馈
+    sortFeedback.textContent = '拖动项目调整顺序，最早在上。';
+
+})();
+</script>
+</body>
+</html>
