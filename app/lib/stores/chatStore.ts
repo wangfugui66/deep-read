@@ -1,6 +1,26 @@
 import { create } from "zustand";
 
 // ====================================================================
+// Utility — extract a human-readable title from first user message
+// ====================================================================
+
+/**
+ * Extract a short title (≤15 chars) from the user's first message.
+ * Strips markdown blockquotes, leading punctuation, and whitespace.
+ * Falls back to "新对话" if nothing meaningful remains.
+ */
+export function extractChatTitle(content: string): string {
+  // 1. Strip markdown blockquote markers per line
+  let cleaned = content.replace(/^>\s*/gm, "");
+  // 2. Strip leading punctuation and whitespace
+  cleaned = cleaned.replace(/^[\s\p{P}]+/u, "");
+  // 3. Take first 12 meaningful characters
+  const head = cleaned.slice(0, 12);
+  if (!head) return "新对话";
+  return head + (cleaned.length > 12 ? "..." : "");
+}
+
+// ====================================================================
 // Chat Store — dialogue panel state + session management (client-side only)
 // ====================================================================
 
@@ -63,7 +83,26 @@ export const useChatStore = create<ChatState>((set) => ({
   open: () => set({ isOpen: true }),
   close: () => set({ isOpen: false }),
 
-  addMessage: (msg) => set((s) => ({ messages: [...s.messages, msg] })),
+  addMessage: (msg) =>
+    set((s) => {
+      const newMessages = [...s.messages, msg];
+
+      // ── Auto-title on first user message ──
+      if (msg.role === "user" && s.currentSessionId) {
+        const precedingUserCount = s.messages.filter((m) => m.role === "user").length;
+        if (precedingUserCount === 0) {
+          const newTitle = extractChatTitle(msg.content);
+          const newSessions = s.sessions.map((sess) =>
+            sess.session_id === s.currentSessionId
+              ? { ...sess, title: newTitle }
+              : sess,
+          );
+          return { messages: newMessages, sessions: newSessions };
+        }
+      }
+
+      return { messages: newMessages };
+    }),
 
   appendToLast: (token) =>
     set((s) => {
