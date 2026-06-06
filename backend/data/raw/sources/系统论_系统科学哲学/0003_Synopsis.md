@@ -1,0 +1,5 @@
+# Synopsis
+
+Systematicism is philosophy of system science. Footing up on a seriestheories in system science which includes general system theory,information theory, cybernetics,dissipative structure theory, synergetic,hypercycle theory,catastrophe theory, theory of chaos and theory of fractal,etc.,the book explores 4 origins of system thinking, ancient and modern,Chinese and foreign, investigates basic characters of 5 main systems, theuniverse, life, spirit, ecology and society, generalizes 8 principles and 5laws of systematicism,and forms a system of system of systematicism.
+
+This book is of great momentum, deep thought, wellknit, explainingprofound theories in simple language and full of time spirit; It will be of tothose whose interest is in system science, philosophy and related cross-disciplines.

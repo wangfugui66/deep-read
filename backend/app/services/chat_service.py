@@ -85,16 +85,16 @@ async def stream_explain(selected_text: str, api_key: str = "") -> AsyncGenerato
     """Stream an explanation for selected text."""
     user_prompt = f"用户选中的文字：\n{selected_text}"
     async for token in _llm_stream(_EXPLAIN_SYSTEM_PROMPT, user_prompt, api_key=api_key):
-        yield f"data: {_json.dumps({'token': token})}\n\n"
-    yield f"data: {_json.dumps({'done': True})}\n\n"
+        yield f"data: {_json.dumps({'type': 'chunk', 'data': token})}\n\n"
+    yield f"data: {_json.dumps({'type': 'done'})}\n\n"
 
 
 async def stream_associate(selected_text: str, api_key: str = "") -> AsyncGenerator[str, None]:
     """Stream cross-domain associations for selected text."""
     user_prompt = f"用户选中的文字：\n{selected_text}"
     async for token in _llm_stream(_ASSOCIATE_SYSTEM_PROMPT, user_prompt, api_key=api_key):
-        yield f"data: {_json.dumps({'token': token})}\n\n"
-    yield f"data: {_json.dumps({'done': True})}\n\n"
+        yield f"data: {_json.dumps({'type': 'chunk', 'data': token})}\n\n"
+    yield f"data: {_json.dumps({'type': 'done'})}\n\n"
 
 
 # ── Socratic Chat — full conversation with profile injection ──
@@ -216,12 +216,10 @@ async def stream_socratic_chat(
         messages.extend(chat_history)
     messages.append({"role": "user", "content": user_message})
 
-    # ═══════════════════════════════════════════════════════════════
-    # Use _llm_stream with system+user mode (overload via message list)
-    # ═══════════════════════════════════════════════════════════════
     key = api_key or os.environ.get("DEEPSEEK_API_KEY", "")
     if not key or key.startswith("sk-your-"):
-        yield "❌ 未配置 DeepSeek API Key，请在设置中配置。"
+        yield f"data: {_json.dumps({'type': 'error', 'message': '未配置 DeepSeek API Key，请在设置中配置。'})}\n\n"
+        yield f"data: {_json.dumps({'type': 'done'})}\n\n"
         return
 
     try:
@@ -241,18 +239,19 @@ async def stream_socratic_chat(
                     temperature=0.8,
                     max_tokens=512,
                 )
-                try:
-                    async for chunk in stream:
-                        if chunk.choices and chunk.choices[0].delta.content:
-                            yield chunk.choices[0].delta.content
-                except Exception:
-                    raise
+                async for chunk in stream:
+                    if chunk.choices and chunk.choices[0].delta.content:
+                        token = chunk.choices[0].delta.content
+                        yield f"data: {_json.dumps({'type': 'chunk', 'data': token})}\n\n"
+                yield f"data: {_json.dumps({'type': 'done'})}\n\n"
                 return
             except Exception:
                 if attempt == 2:
-                    yield " ❌ 请求失败，请重试"
+                    yield f"data: {_json.dumps({'type': 'error', 'message': '请求失败，请重试'})}\n\n"
+                    yield f"data: {_json.dumps({'type': 'done'})}\n\n"
                     return
                 await asyncio.sleep(2 ** attempt)
     except Exception as e:
         error_detail = str(e)[:200]
-        yield f"❌ 大模型 API 异常：{error_detail}"
+        yield f"data: {_json.dumps({'type': 'error', 'message': f'大模型 API 异常：{error_detail}'})}\n\n"
+        yield f"data: {_json.dumps({'type': 'done'})}\n\n"

@@ -26,7 +26,7 @@ interface Props {
 }
 
 export default function BottomNav({ chapters, currentPath, quizGenerating, skeletonToc, onNavigate }: Props) {
-  const { theme, readingMode } = useReaderStore();
+  const { theme } = useReaderStore();
   const sorted = [...chapters].sort((a, b) =>
     a.path.localeCompare(b.path, undefined, { numeric: true, sensitivity: "base" })
   );
@@ -54,11 +54,13 @@ export default function BottomNav({ chapters, currentPath, quizGenerating, skele
       const fp = normalize(ch.file_path ?? "");
       return fp === target || fp.endsWith("/" + target) || target.endsWith("/" + fp);
     });
-    return match?.strategy?.trim() ?? "";
+    const result = match?.strategy?.trim() ?? "";
+    console.log("[BottomNav] strategy lookup:", { currentPath, target, strategy: result, allCount: allChapters.length });
+    return result;
   };
   const strategy = getStrategy();
-  // Must satisfy ALL three conditions simultaneously
-  const isIntensive = readingMode === "intensive" && !!skeletonToc && strategy === "精读";
+  // Gate: current chapter is "精读" → show quiz button regardless of readingMode
+  const isIntensive = !!skeletonToc && strategy === "精读";
 
   return (
     <div className={`flex items-center justify-center gap-12 px-4 py-6 !border-none !shadow-none sticky bottom-0 z-50 ${BOTTOM_BG[theme]} ${BOTTOM_TEXT[theme]}`}>

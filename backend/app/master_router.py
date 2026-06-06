@@ -178,11 +178,11 @@ async def chat_action(req: ChatActionRequest, request: Request) -> StreamingResp
     async def _with_flush():
         full_response = ""
         async for chunk in inner:
-            if chunk.startswith("data: ") and '"token"' in chunk:
+            if chunk.startswith("data: "):
                 try:
                     data = _json.loads(chunk[6:])
-                    if data.get("token"):
-                        full_response += data["token"]
+                    if data.get("type") == "chunk" and data.get("data"):
+                        full_response += data["data"]
                 except Exception:
                     pass
             yield chunk
@@ -216,7 +216,7 @@ async def chat_socratic(req: SocraticChatRequest, request: Request) -> Streaming
 
     async def _sse():
         try:
-            async for token in chat_service.stream_socratic_chat(
+            async for line in chat_service.stream_socratic_chat(
                 req.book_name,
                 req.message,
                 api_key=request.headers.get("x-api-key", ""),
@@ -224,10 +224,10 @@ async def chat_socratic(req: SocraticChatRequest, request: Request) -> Streaming
                 chapter_path=req.chapter_path or "",
                 chat_history=req.chat_history,
             ):
-                yield f"data: {_json.dumps({'token': token})}\n\n"
+                yield line
         except Exception as e:
-            yield f"data: {_json.dumps({'token': f'❌ 服务端异常：{str(e)[:200]}'})}\n\n"
-        yield f"data: {_json.dumps({'done': True})}\n\n"
+            yield f"data: {_json.dumps({'type': 'error', 'message': f'服务端异常：{str(e)[:200]}'})}\n\n"
+            yield f"data: {_json.dumps({'type': 'done'})}\n\n"
 
     return StreamingResponse(_sse(), media_type="text/event-stream")
 
@@ -275,7 +275,8 @@ async def extract_profile(req: ProfileExtractRequest, request: Request) -> Strea
             ):
                 yield event
         except Exception as e:
-            yield f"data: {_json.dumps({'error': str(e)})}\n\n"
+            yield f"data: {_json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+            yield f"data: {_json.dumps({'type': 'done'})}\n\n"
 
     return StreamingResponse(_sse_wrapper(), media_type="text/event-stream")
 

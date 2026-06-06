@@ -3,11 +3,24 @@
 Zero database dependencies. All state is in Markdown files under data/.
 """
 
+from pathlib import Path
+
+# Load .env with absolute path — immune to CWD drift.
+# Must execute BEFORE any service imports that read os.environ.
+try:
+    from dotenv import load_dotenv
+    _env_path = Path(__file__).resolve().parent.parent / ".env"
+    load_dotenv(dotenv_path=_env_path)
+except ImportError:
+    # python-dotenv not installed — rely on system env vars / IDE injection
+    pass
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .master_router import router
 from .resource_router import resource_router
+from .plugins_router import plugins_router
 
 app = FastAPI(
     title="DeepRead-v2",
@@ -25,6 +38,7 @@ app.add_middleware(
 
 app.include_router(router)
 app.include_router(resource_router)
+app.include_router(plugins_router)
 
 # ── Log prompt signatures at startup ──
 try:

@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { fetchBookMeta, fetchChapters, fetchChapterContent, generateSkeleton, fetchQuizQuestions, fetchDynamicToc } from "@/lib/api_client";
 import { useReaderStore } from "@/lib/stores/readerStore";
 import { useChatStore } from "@/lib/stores/chatStore";
@@ -17,6 +17,7 @@ import ProfileWizardModal from "@/app/components/profile/ProfileWizardModal";
 import BottomNav from "@/app/components/reader/BottomNav";
 import InnerReaderHeader from "@/app/components/reader/InnerReaderHeader";
 import SelectionToolbar from "@/app/components/reader/SelectionToolbar";
+import TeachAnyButton from "@/app/components/reader/TeachAnyButton";
 
 const THEME_BG: Record<string, string> = {
   day: "bg-[#F9F7F3]",
@@ -65,6 +66,9 @@ export default function ReadPage() {
 
   const [notFound, setNotFound] = useState(false);
   const [skeletonToc, setSkeletonToc] = useState<SkeletonTocData | null>(null);
+  // Ref mirror for always-fresh reads inside stable callbacks (avoids stale closure)
+  const skeletonTocRef = useRef<SkeletonTocData | null>(null);
+  skeletonTocRef.current = skeletonToc;
   const chatStore = useChatStore();
 
   const handleProfileComplete = useCallback(() => {
@@ -105,23 +109,23 @@ export default function ReadPage() {
     [bookName, setChapter, setBody, setPageError]
   );
 
-  // ── Load skeleton TOC for strategy detection ──
+  // ── Load skeleton TOC for strategy detection (re-fetch on regeneration) ──
   useEffect(() => {
     if (!bookName) return;
     fetchDynamicToc(bookName)
-      .then((res) => setSkeletonToc(res.toc_data ?? null))
+      .then((res) => setSkeletonToc(res?.toc_data ?? null))
       .catch(() => setSkeletonToc(null));
-  }, [bookName]);
+  }, [bookName, skeletonRefreshKey]);
 
-  // ── Get strategy for a given chapter path (triple-lock, no default leakage)
+  // ── Get strategy for a given chapter path (always fresh via ref, stable callback)
   const getChapterStrategy = useCallback((path: string): string => {
-    if (!skeletonToc) return "";
+    const toc = skeletonTocRef.current;
+    if (!toc) return "";
     const allChapters = [
-      ...(skeletonToc.modules ?? []).flatMap((m: { chapters?: Array<{ file_path: string; strategy?: string }> }) => m.chapters ?? []),
-      ...(skeletonToc.archived_chapters ?? []),
+      ...(toc.modules ?? []).flatMap((m: { chapters?: Array<{ file_path: string; strategy?: string }> }) => m.chapters ?? []),
+      ...(toc.archived_chapters ?? []),
     ];
     if (allChapters.length === 0) return "";
-    // Robust matching: handle URL encoding, leading slash, path separators
     const normalize = (p: string) => {
       try { return decodeURIComponent(p).replace(/\\/g, "/").replace(/^\/+/, "").toLowerCase(); }
       catch { return p.replace(/\\/g, "/").replace(/^\/+/, "").toLowerCase(); }
@@ -132,39 +136,38 @@ export default function ReadPage() {
       return fp === target || fp.endsWith("/" + target) || target.endsWith("/" + fp);
     });
     return match?.strategy?.trim() ?? "";
-  }, [skeletonToc]);
+  }, []); // stable — reads skeletonTocRef.current on every invocation
 
   const handleChapterNavigate = useCallback(
     async (targetPath: string) => {
-      const mode = useReaderStore.getState().readingMode;
-      const strategy = getChapterStrategy(targetPath);
+      const currentPath = useReaderStore.getState().currentChapterPath;
+      const strategy = getChapterStrategy(currentPath ?? "");
+      console.log("[handleChapterNavigate] strategy lookup:", { currentPath, strategy, hasSkeleton: !!skeletonTocRef.current });
 
-      // Triple-lock: intensive mode + skeletonToc loaded + chapter explicitly "精读"
-      if (mode === "intensive" && !!skeletonToc && strategy === "精读") {
-        setPendingChapter(targetPath);
-        setQuizGenerating(true);
-        try {
-          const result = await fetchQuizQuestions(bookName, targetPath, useReaderStore.getState().currentChapterTitle ?? "");
-          if (result.skipped) {
-            // Skip quiz — go directly
-            goToChapter(targetPath);
-            setPendingChapter(null);
-            return;
-          }
-          setQuizQuestions(result.questions);
-          setQuizOpen(true);
-        } catch (e) {
-          console.error("Quiz generation failed:", e);
-          goToChapter(targetPath);
-        } finally {
-          setQuizGenerating(false);
-        }
+      // Not gated — navigate directly
+      if (!(!!skeletonTocRef.current && strategy === "精读")) {
+        goToChapter(targetPath);
         return;
       }
 
-      goToChapter(targetPath);
+      // ── Gate: current chapter is "精读" → QuizModal is the sole gatekeeper ──
+      // All navigation now flows through: QuizModal.onPass → handleQuizPass → goToChapter(pending)
+      setPendingChapter(targetPath);
+      setQuizGenerating(true);
+      try {
+        const result = await fetchQuizQuestions(bookName, currentPath ?? "", currentChapterTitle ?? "");
+        setQuizQuestions(result.questions ?? []);
+        setQuizOpen(true);
+      } catch (e) {
+        console.error("Quiz generation failed:", e);
+        setQuizQuestions([]);
+        setQuizOpen(true);
+      } finally {
+        setQuizGenerating(false);
+      }
+      // Never call goToChapter here — the gate is locked until QuizModal fires onPass
     },
-    [bookName, goToChapter, setPendingChapter, setQuizGenerating, setQuizQuestions, setQuizOpen, getChapterStrategy, skeletonToc]
+    [bookName, goToChapter, setPendingChapter, setQuizGenerating, setQuizQuestions, setQuizOpen, getChapterStrategy]
   );
 
   const handleQuizPass = useCallback(() => {
@@ -281,6 +284,18 @@ export default function ReadPage() {
             loading={loading}
           />
 
+          {/* TeachAny 单节课件入口（带守门员） */}
+          {currentChapterPath && !loading && (
+            <div className="px-6 pb-2 flex justify-end">
+              <TeachAnyButton
+                bookName={bookName}
+                chapterPath={currentChapterPath ?? ""}
+                chapterContent={body ?? ""}
+                chapterStrategy={getChapterStrategy(currentChapterPath)}
+              />
+            </div>
+          )}
+
           {chapters.length > 0 && currentChapterPath && !loading && (
             <BottomNav
               chapters={chapters}
@@ -300,7 +315,7 @@ export default function ReadPage() {
 
       {quizOpen && (
         <QuizModal
-          title={pendingChapter ? chapters.find(c => c.path === pendingChapter)?.title ?? "新章节" : "新章节"}
+          title={currentChapterTitle ?? "新章节"}
           questions={quizQuestions}
           skipped={quizQuestions.length === 0}
           skipReason="内容较少，已为您免检放行"

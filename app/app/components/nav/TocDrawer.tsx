@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
-  X, ChevronLeft, ChevronRight, ChevronDown, Loader2, Sparkles, BookOpen, Stethoscope,
+  X, ChevronLeft, ChevronRight, ChevronDown, Loader2, Sparkles, BookOpen, Stethoscope, Layers,
 } from "lucide-react";
 import { fetchChapters, fetchDynamicToc, fetchIndexingStatus, generateSkeleton, deleteProfile } from "@/lib/api_client";
 import { useReaderStore } from "@/lib/stores/readerStore";
-import type { ChapterRef, SkeletonTocData } from "@/lib/types";
+import type { ChapterRef, SkeletonTocData, SkeletonModule } from "@/lib/types";
+import { API_BASE_URL, resolveTeachAnyUrl } from "@/lib/api-config";
 
 // ====================================================================
 // TocDrawer — unified TOC with strategy overlay from dynamic skeleton
@@ -95,6 +96,7 @@ export default function TocDrawer({ bookName, isOpen, onClose, onOpenWizard, ref
   const [skeletonLoading, setSkeletonLoading] = useState(false);
   const [skeletonGenerating, setSkeletonGenerating] = useState(false);
   const [skeletonError, setSkeletonError] = useState<string | null>(null);
+  const [aggregateToast, setAggregateToast] = useState<string | null>(null);
 
   const { currentChapterPath, setChapter, setWizardOpen, indexingStatus, setIndexingStatus, indexedCount, totalCount, setIndexingProgress } = useReaderStore();
 
@@ -135,20 +137,16 @@ export default function TocDrawer({ bookName, isOpen, onClose, onOpenWizard, ref
       .finally(() => setLoadingChapters(false));
   }, [bookName]);
 
-  // ── Load skeleton on mount and on refreshKey change ──
+  // ── Load skeleton on mount and on refreshKey change (404 → null, no throw) ──
   useEffect(() => {
     if (!bookName) return;
     setSkeletonLoading(true);
     setSkeletonError(null);
     fetchDynamicToc(bookName)
-      .then((res) => setTocData(res.toc_data ?? null))
-      .catch((e) => {
-        const msg: string = e?.message ?? "";
-        if (msg.includes("404") || msg.includes("not found") || msg.includes("400")) {
-          setTocData(null);
-        } else {
-          setSkeletonError(msg);
-        }
+      .then((res) => setTocData(res?.toc_data ?? null))
+      .catch((e: unknown) => {
+        const msg = e instanceof Error ? e.message : String(e);
+        setSkeletonError(msg);
       })
       .finally(() => setSkeletonLoading(false));
   }, [bookName, refreshKey]);
@@ -180,9 +178,14 @@ export default function TocDrawer({ bookName, isOpen, onClose, onOpenWizard, ref
       try {
         const s = await fetchIndexingStatus(bookName);
         console.log("📊 [4] 轮询结果: status=%s, indexed=%d/%d", s.status, s.indexed, s.total);
-        setIndexingStatus(s.status ?? "pending");
+        const newStatus = s.status ?? "pending";
+        if (indexingStatus === "processing" && newStatus === "pending") {
+          console.warn("⚠️ 拦截到后端异常的 pending 状态，拒绝降级，继续轮询...");
+          return;
+        }
+        setIndexingStatus(newStatus);
         setIndexingProgress(s.indexed ?? 0, s.total ?? 0);
-        if (s.status === "completed") {
+        if (newStatus === "completed") {
           console.log("🏁 [4a] status=completed → 清除定时器");
           if (timer) { clearInterval(timer); timer = null; }
         }
@@ -200,6 +203,21 @@ export default function TocDrawer({ bookName, isOpen, onClose, onOpenWizard, ref
   }, [indexingStatus, bookName, setIndexingStatus, setIndexingProgress]);
 
   const tree = useMemo(() => buildTree(chapters), [chapters]);
+
+  // ── Compute read-paths set: chapters before current in sorted order ──
+  const readPaths = useMemo<Set<string>>(() => {
+    const set = new Set<string>();
+    if (!currentChapterPath) return set;
+    const sorted = [...chapters].sort((a, b) =>
+      a.path.localeCompare(b.path, undefined, { numeric: true, sensitivity: "base" })
+    );
+    const curIdx = sorted.findIndex((ch) => ch.path === currentChapterPath);
+    if (curIdx <= 0) return set;
+    for (let i = 0; i < curIdx; i++) {
+      set.add(sorted[i].path);
+    }
+    return set;
+  }, [chapters, currentChapterPath]);
 
   const handleSelect = useCallback(
     (ch: ChapterRef) => {
@@ -280,6 +298,54 @@ export default function TocDrawer({ bookName, isOpen, onClose, onOpenWizard, ref
     } catch (err) {
       console.error("❌ [2] POST 请求失败:", err instanceof Error ? err.message : String(err));
       alert("索引构建请求失败，请确认后端已启动");
+    }
+  };
+
+  // ── TeachAny aggregation handler ──
+  const handleAggregateModule = async (mod: SkeletonModule) => {
+    const chapterPaths = (mod?.chapters || []).map((ch) => ch?.file_path || "").filter(Boolean);
+    if (chapterPaths.length === 0) return;
+
+    console.log("[TeachAny] 触发章层级聚合生成", {
+      bookName,
+      module_name: mod?.module_name || "",
+      chapterCount: chapterPaths.length,
+      chapterPaths,
+    });
+
+    setAggregateToast(`AI 正在聚合「${mod?.module_name || "未命名模块"}」(${chapterPaths.length}节) 生成大课件，约需 30 秒…`);
+
+    try {
+      const apiKey = typeof window !== "undefined" ? localStorage.getItem("dr-api-key") ?? "" : "";
+      const res = await fetch(`${API_BASE_URL}/api/plugins/teachany/generate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(apiKey ? { "x-api-key": apiKey } : {}),
+        },
+        body: JSON.stringify({
+          book_name: bookName,
+          chapter_paths: chapterPaths,
+        }),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "");
+        throw new Error(errText || `HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      if (data?.view_url) {
+        setAggregateToast("课件生成成功！正在新标签页打开…");
+        setTimeout(() => setAggregateToast(null), 2000);
+        window.open(resolveTeachAnyUrl(data.view_url), "_blank");
+      } else {
+        throw new Error("后端未返回课件 URL");
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "未知错误";
+      setAggregateToast(`生成失败: ${msg}`);
+      setTimeout(() => setAggregateToast(null), 5000);
     }
   };
 
@@ -428,6 +494,40 @@ export default function TocDrawer({ bookName, isOpen, onClose, onOpenWizard, ref
         )}
 
         <nav className="overflow-y-auto h-[calc(100vh-3rem)] py-2">
+          {/* ── Skeleton module overview — TeachAny aggregation entry points ── */}
+          {hasSkeleton && (tocData?.modules?.length || 0) > 0 && (
+            <div className="px-3 pb-2 mb-2 border-b border-neutral-100">
+              <div className="text-[10px] font-medium text-neutral-400 uppercase tracking-wide mb-1.5">
+                聚合课件
+              </div>
+              {(tocData?.modules || []).map((mod, idx) => {
+                const chCount = (mod?.chapters?.length || 0);
+                return (
+                  <div key={idx} className="flex items-center justify-between py-0.5 group">
+                    <span className="text-[11px] text-neutral-500 truncate flex-1 min-w-0 pr-1">
+                      {mod?.module_name || `模块 ${idx + 1}`}
+                      {chCount > 0 && <span className="text-neutral-350 ml-0.5">({chCount}节)</span>}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleAggregateModule(mod)}
+                      title={`聚合「${mod?.module_name || "模块"}」全部 ${chCount} 节生成宏观课件`}
+                      className="p-0.5 rounded text-neutral-350 hover:text-indigo-500 hover:bg-indigo-50 transition-colors shrink-0 opacity-0 group-hover:opacity-100"
+                    >
+                      <Layers size={12} />
+                    </button>
+                  </div>
+                );
+              })}
+
+              {/* Aggregation toast */}
+              {aggregateToast && (
+                <div className="mt-1.5 px-2 py-1 rounded bg-indigo-50 border border-indigo-100 text-[10px] text-indigo-600 animate-pulse">
+                  {aggregateToast}
+                </div>
+              )}
+            </div>
+          )}
           {loadingChapters && (
             <div className="px-4 py-8 text-sm text-neutral-400 text-center animate-pulse">加载中…</div>
           )}
@@ -447,6 +547,7 @@ export default function TocDrawer({ bookName, isOpen, onClose, onOpenWizard, ref
               onToggleCollapse={toggleCollapse}
               chapters={chapters}
               strategyMap={strategyMap}
+              readPaths={readPaths}
             />
           )}
         </nav>
@@ -460,7 +561,7 @@ export default function TocDrawer({ bookName, isOpen, onClose, onOpenWizard, ref
 // ====================================================================
 
 function TreeNodeList({
-  nodes, currentPath, collapsed, indentMap, onSelect, onToggleCollapse, chapters, strategyMap,
+  nodes, currentPath, collapsed, indentMap, onSelect, onToggleCollapse, chapters, strategyMap, readPaths,
 }: {
   nodes: TocNode[];
   currentPath: string | null;
@@ -470,6 +571,7 @@ function TreeNodeList({
   onToggleCollapse: (path: string) => void;
   chapters: ChapterRef[];
   strategyMap: Map<string, StrategyInfo>;
+  readPaths: Set<string>;
 }) {
   return (
     <>
@@ -479,12 +581,24 @@ function TreeNodeList({
         const isActive = node.path === currentPath;
         const indent = indentMap[node.level] ?? "";
 
-         // Strategy overlay
+        // Strategy overlay
         const si = strategyMap.get(normalizePath(node.path));
         const rawStrategy = si?.strategy ?? "";
         const strategy = rawStrategy;
-        const isSkim = strategy === "略读" || strategy === "跳过";
         const isIntensive = strategy === "精读";
+
+        // Read-state: chapters before current → gray
+        const isRead = readPaths.has(node.path);
+
+        // Build dynamic className
+        let itemClass = `w-full text-left px-4 py-1.5 text-sm transition-colors flex items-center justify-between gap-1 ${indent} `;
+        if (isActive) {
+          itemClass += "bg-neutral-100 text-neutral-900 font-medium";
+        } else if (isRead) {
+          itemClass += "text-gray-400 hover:bg-neutral-50";
+        } else {
+          itemClass += "text-neutral-700 hover:bg-neutral-50";
+        }
 
         return (
           <div key={node.path}>
@@ -493,13 +607,7 @@ function TreeNodeList({
                 const ch = chapters.find((c) => c.path === node.path);
                 if (ch) onSelect(ch);
               }}
-              className={`w-full text-left px-4 py-1.5 text-sm transition-colors flex items-center justify-between gap-1 ${indent} ${
-                isActive
-                  ? "bg-neutral-100 text-neutral-900 font-medium"
-                  : isSkim
-                    ? "text-slate-400 hover:bg-slate-50/50"
-                    : "text-neutral-600 hover:bg-neutral-50"
-              }`}
+              className={itemClass}
             >
               {/* Collapse toggle + title */}
               <span className="flex items-center gap-1 min-w-0 flex-1">
@@ -514,13 +622,13 @@ function TreeNodeList({
                   <span className="w-4 shrink-0" />
                 )}
 
-                <span className={`truncate ${isIntensive ? "font-semibold" : ""}`}>
+                <span className={`truncate ${isIntensive && !isRead ? "font-bold" : ""}`}>
                   {node.displayTitle}
                 </span>
               </span>
 
               {/* Strategy badge — only 精读 gets visual emphasis */}
-              {isIntensive && (
+              {isIntensive && !isRead && (
                 <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium border shrink-0 bg-red-50 border-red-200 text-red-600">
                   <BookOpen size={10} />
                   精读
@@ -538,6 +646,7 @@ function TreeNodeList({
                 onToggleCollapse={onToggleCollapse}
                 chapters={chapters}
                 strategyMap={strategyMap}
+                readPaths={readPaths}
               />
             )}
           </div>

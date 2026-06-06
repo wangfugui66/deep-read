@@ -9,9 +9,7 @@ import os
 from pathlib import Path
 from typing import AsyncGenerator
 
-# ── DATA_ROOT: go up 3 dirs from app/services/ → project root, then data/ ──
-DATA_ROOT = Path(__file__).resolve().parent.parent.parent / "data"
-
+from app.core.config import DATA_ROOT
 
 # ====================================================================
 # Schema migration — old flat profile → hierarchical v2
@@ -134,7 +132,7 @@ async def stream_profile_extraction(
         delta = chunk.choices[0].delta
         if delta and delta.content:
             full_response += delta.content
-            yield f"data: {_json.dumps({'token': delta.content})}\n\n"
+            yield f"data: {_json.dumps({'type': 'chunk', 'data': delta.content})}\n\n"
 
     # Extract JSON profile from response
     import re
@@ -155,16 +153,17 @@ async def stream_profile_extraction(
 
     if profile_json:
         _save_profile_file(book_name, profile_json, data_root)
-        yield f"data: {_json.dumps({'event': 'profile_readiness', 'is_ready': True})}\n\n"
+        yield f"data: {_json.dumps({'type': 'event', 'event_name': 'profile_readiness', 'data': {'is_ready': True}})}\n\n"
 
-    yield "data: [DONE]\n\n"
+    yield f"data: {_json.dumps({'type': 'done'})}\n\n"
 
 
 # ── Profile file I/O ──
 
 def _save_profile_file(book_name: str, profile: dict, data_root: str | None = None) -> Path:
+    from ..utils.file_ops import atomic_write_json
     path = _profile_path(book_name, data_root)
-    path.write_text(_json.dumps(profile, ensure_ascii=False, indent=2), encoding="utf-8")
+    atomic_write_json(path, profile)
     return path
 
 

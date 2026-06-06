@@ -11,8 +11,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-# ── DATA_ROOT: go up 3 dirs from app/services/ → project root, then data/ ──
-DATA_ROOT = Path(__file__).resolve().parent.parent.parent / "data"
+from app.core.config import DATA_ROOT
 
 FORBIDDEN_BOOK_NAMES = {"目录", "0000_目录", "0001_目录", "MD_目录", "README", "目录.md"}
 FORBIDDEN_PREFIXES = ("目录", "0000_目录")

@@ -120,7 +120,7 @@ export async function* streamChatAction(
   context: string,
   bookName: string = "",
   chapterId: string = "",
-): AsyncGenerator<{ token?: string; done?: boolean }, void, undefined> {
+): AsyncGenerator<{ token?: string; done?: boolean; type?: string }, void, undefined> {
   try {
   const apiKey = _getApiKey();
   const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -152,10 +152,24 @@ export async function* streamChatAction(
 
     for (const line of lines) {
       if (line.startsWith("data: ")) {
-        const data = line.slice(6).trim();
-        if (!data) continue;
+        const raw = line.slice(6).trim();
+        if (!raw) continue;
         try {
-          yield JSON.parse(data);
+          const event = JSON.parse(raw);
+          // Unified SSE protocol → backward-compat shape
+          if (event.type === "chunk" && typeof event.data === "string") {
+            yield { token: event.data, type: "chunk" };
+          } else if (event.type === "error") {
+            yield { token: event.message ?? "未知错误", type: "error" };
+          } else if (event.type === "done") {
+            yield { done: true, type: "done" };
+          }
+          // Legacy fallback: { token, done } (for smooth rollout)
+          else if (event.token !== undefined) {
+            yield { token: String(event.token) };
+          } else if (event.done !== undefined) {
+            yield { done: !!event.done };
+          }
         } catch {
           // skip unparseable lines
         }
@@ -164,9 +178,9 @@ export async function* streamChatAction(
   }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    yield { token: `❌ 系统异常：${message}` };
+    yield { token: `❌ 系统异常：${message}`, type: "error" };
   } finally {
-    yield { done: true };
+    yield { done: true, type: "done" };
     return;
   }
 }
@@ -185,7 +199,7 @@ export async function* streamSocraticChat(
   message: string,
   chapterPath: string = "",
   chatHistory: Array<{ role: string; content: string }> = [],
-): AsyncGenerator<{ token?: string; done?: boolean }, void, undefined> {
+): AsyncGenerator<{ token?: string; done?: boolean; type?: string }, void, undefined> {
   try {
     const apiKey = _getApiKey();
     const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -223,10 +237,24 @@ export async function* streamSocraticChat(
 
       for (const line of lines) {
         if (line.startsWith("data: ")) {
-          const data = line.slice(6).trim();
-          if (!data) continue;
+          const raw = line.slice(6).trim();
+          if (!raw) continue;
           try {
-            yield JSON.parse(data);
+            const event = JSON.parse(raw);
+            // Unified SSE protocol → backward-compat shape
+            if (event.type === "chunk" && typeof event.data === "string") {
+              yield { token: event.data, type: "chunk" };
+            } else if (event.type === "error") {
+              yield { token: event.message ?? "未知错误", type: "error" };
+            } else if (event.type === "done") {
+              yield { done: true, type: "done" };
+            }
+            // Legacy fallback
+            else if (event.token !== undefined) {
+              yield { token: String(event.token) };
+            } else if (event.done !== undefined) {
+              yield { done: !!event.done };
+            }
           } catch {
             // skip unparseable lines
           }
@@ -235,9 +263,9 @@ export async function* streamSocraticChat(
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    yield { token: `❌ 系统异常：${message}` };
+    yield { token: `❌ 系统异常：${message}`, type: "error" };
   } finally {
-    yield { done: true };
+    yield { done: true, type: "done" };
     return;
   }
 }
@@ -338,7 +366,7 @@ export async function* streamProfileExtraction(
   bookName: string,
   chatContext: Array<{ role: "user" | "assistant"; content: string }>
 ): AsyncGenerator<
-  { token?: string; event?: string; is_ready?: boolean; done?: boolean },
+  { token?: string; event?: string; is_ready?: boolean; done?: boolean; type?: string },
   void,
   undefined
 > {
@@ -369,12 +397,28 @@ export async function* streamProfileExtraction(
 
     for (const line of lines) {
       if (line.startsWith("data: ")) {
-        const data = line.slice(6).trim();
-        if (!data) continue;
+        const raw = line.slice(6).trim();
+        if (!raw) continue;
         try {
-          yield JSON.parse(data);
+          const event = JSON.parse(raw);
+          // Unified SSE protocol → backward-compat shape
+          if (event.type === "chunk" && typeof event.data === "string") {
+            yield { token: event.data, type: "chunk" };
+          } else if (event.type === "error") {
+            yield { token: event.message ?? "未知错误", type: "error" };
+          } else if (event.type === "done") {
+            yield { done: true, type: "done" };
+          } else if (event.type === "event") {
+            yield { event: event.event_name, is_ready: event.data?.is_ready ?? false, type: "event" };
+          }
+          // Legacy fallback
+          else if (event.token !== undefined) {
+            yield { token: String(event.token) };
+          } else if (event.event !== undefined) {
+            yield { event: event.event, is_ready: event.is_ready ?? false };
+          }
         } catch {
-          // skip
+          // skip unparseable lines
         }
       }
     }
@@ -444,13 +488,22 @@ export async function generateSkeleton(
   });
 }
 
-/** Read dynamic TOC as structured JSON. */
+/** Read dynamic TOC as structured JSON. Returns null if not yet generated (404). */
 export async function fetchDynamicToc(
   bookName: string
-): Promise<SkeletonReadResponse> {
-  return _fetch<SkeletonReadResponse>(
-    `/api/skeleton/${encodeURIComponent(bookName)}`
-  );
+): Promise<SkeletonReadResponse | null> {
+  try {
+    return await _fetch<SkeletonReadResponse>(
+      `/api/skeleton/${encodeURIComponent(bookName)}`
+    );
+  } catch (e: unknown) {
+    // 404 means skeleton hasn't been generated yet — safe "no data" state
+    if (e instanceof Error && (e.message.includes("404") || e.message.toLowerCase().includes("not found"))) {
+      return null;
+    }
+    // Real errors (network, 500, etc.) propagate normally
+    throw e;
+  }
 }
 
 // ── Profile Converge (Multi-round Socratic) ──

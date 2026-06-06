@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>近代科学与系统思想</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Roboto, system-ui, sans-serif; background: #f4f7fa; color: #1e2a3e; line-height: 1.7; padding: 2rem 1rem; }
+  .container { max-width: 900px; margin: 0 auto; background: #fff; border-radius: 28px; box-shadow: 0 12px 40px rgba(0,0,0,0.06); padding: 2.5rem 2.2rem; }
+  @media (max-width: 600px) { .container { padding: 1.5rem 1.2rem; } }
+  h1 { font-size: 2.2rem; font-weight: 600; letter-spacing: -0.02em; color: #0b2b44; margin-bottom: 0.4rem; border-left: 5px solid #2a7faa; padding-left: 1rem; }
+  .subhead { font-size: 1rem; color: #4b6a7f; margin-bottom: 1.8rem; display: flex; gap: 0.8rem; flex-wrap: wrap; }
+  .tag { background: #e4edf4; color: #1f5570; border-radius: 20px; padding: 0.2rem 0.9rem; font-size: 0.8rem; font-weight: 500; }
+  .hook { background: #eaf3fa; border-radius: 20px; padding: 1.4rem 1.8rem; margin-bottom: 2.2rem; border-left: 6px solid #2a7faa; }
+  .hook strong { color: #0b2b44; }
+  .section-title { font-size: 1.4rem; font-weight: 600; margin: 2rem 0 1rem 0; color: #0b2b44; border-bottom: 2px solid #dce7ef; padding-bottom: 0.3rem; }
+  .concept-grid { display: flex; flex-wrap: wrap; gap: 1.2rem; margin: 1.2rem 0; }
+  .concept-card { background: #f8fafc; border-radius: 18px; padding: 1.2rem 1.5rem; flex: 1 1 200px; border: 1px solid #e2ebf2; }
+  .concept-card h3 { font-size: 1.1rem; color: #1f5570; margin-bottom: 0.4rem; }
+  .concept-card p { font-size: 0.95rem; color: #2c4055; }
+  .interactive-box { background: #f6faff; border-radius: 24px; padding: 1.8rem 1.8rem 2rem; margin: 2rem 0; border: 1px solid #d4e3f0; }
+  .interactive-box h2 { font-size: 1.3rem; margin-bottom: 1rem; color: #0b2b44; }
+  .quiz-option, .sort-item { background: white; border: 2px solid #d4e3f0; border-radius: 14px; padding: 0.9rem 1.2rem; margin: 0.5rem 0; cursor: pointer; transition: all 0.15s; font-size: 0.98rem; }
+  .quiz-option:hover { background: #ecf5fc; border-color: #2a7faa; }
+  .quiz-option.correct { background: #d4edda; border-color: #1f7b4a; color: #14532d; }
+  .quiz-option.wrong { background: #f8d7da; border-color: #b02a37; color: #842029; }
+  .quiz-option.disabled { pointer-events: none; opacity: 0.7; }
+  .feedback { margin-top: 0.8rem; padding: 0.7rem 1.2rem; border-radius: 14px; font-weight: 500; display: none; }
+  .feedback.show { display: block; }
+  .feedback.correct { background: #d4edda; color: #14532d; }
+  .feedback.wrong { background: #f8d7da; color: #842029; }
+  .sort-container { display: flex; flex-direction: column; gap: 0.5rem; margin: 1rem 0; }
+  .sort-item { display: flex; align-items: center; justify-content: space-between; background: white; user-select: none; }
+  .sort-item.dragging { opacity: 0.4; }
+  .sort-item .drag-handle { cursor: grab; color: #6f8fa3; font-size: 1.2rem; margin-right: 0.8rem; }
+  .sort-item .drag-handle:active { cursor: grabbing; }
+  .sort-item.drag-over { border-color: #2a7faa; background: #e3f0fc; }
+  .sort-btn { background: #2a7faa; color: white; border: none; border-radius: 30px; padding: 0.6rem 1.6rem; font-size: 0.95rem; font-weight: 500; cursor: pointer; margin-top: 0.8rem; transition: 0.15s; }
+  .sort-btn:hover { background: #1f6488; }
+  .sort-btn:disabled { opacity: 0.5; cursor: default; }
+  .flashcard-grid { display: flex; flex-wrap: wrap; gap: 1.2rem; margin: 1rem 0; }
+  .flashcard { background: white; border: 2px solid #d4e3f0; border-radius: 20px; padding: 1.2rem 1.2rem 1.5rem; flex: 1 1 160px; cursor: pointer; transition: 0.2s; text-align: center; min-height: 120px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+  .flashcard:hover { border-color: #2a7faa; background: #f4faff; }
+  .flashcard .front { font-weight: 600; color: #0b2b44; font-size: 1rem; }
+  .flashcard .back { display: none; font-size: 0.93rem; color: #1f5570; }
+  .flashcard.flipped .front { display: none; }
+  .flashcard.flipped .back { display: block; }
+  .flashcard.flipped { background: #eaf3fa; border-color: #2a7faa; }
+  .summary-box { background: #eaf3fa; border-radius: 20px; padding: 1.5rem 1.8rem; margin: 2rem 0 1rem; }
+  .summary-box h3 { color: #0b2b44; margin-bottom: 0.5rem; }
+  .next-steps { color: #2c4055; font-size: 0.95rem; margin-top: 0.8rem; }
+  .btn-reset { background: transparent; border: 2px solid #2a7faa; color: #2a7faa; border-radius: 30px; padding: 0.4rem 1.2rem; font-size: 0.85rem; cursor: pointer; margin-left: 0.8rem; transition: 0.15s; }
+  .btn-reset:hover { background: #eaf3fa; }
+  .status-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-top: 0.5rem; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>近代科学与系统思想</h1>
+  <div class="subhead">
+    <span class="tag">近代科学</span>
+    <span class="tag">机械论</span>
+    <span class="tag">还原论</span>
+  </div>
+
+  <!-- ABT Hook -->
+  <div class="hook">
+    <strong>📖 And · But · Therefore</strong><br>
+    <strong>And</strong> — 近代科学从欧洲兴起，以哥白尼日心说为开端，带来全新的观察方式。<br>
+    <strong>But</strong> — 培根、笛卡儿、牛顿等人将世界拆解为孤立部分，形成机械论与还原论的世界图景，整体联系一度被忽略。<br>
+    <strong>Therefore</strong> — 这种机械论思维为后来的系统思想奠定了分析基础——先拆解，再整合。
+  </div>
+
+  <!-- 关键概念 -->
+  <div class="section-title">🧩 关键概念</div>
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h3>🌞 哥白尼日心说</h3>
+      <p>近代科学的开端，挑战地心说，开启科学革命。</p>
+    </div>
+    <div class="concept-card">
+      <h3>⚙️ 机械论</h3>
+      <p>将自然视为机器，所有现象可用力学规律解释。</p>
+    </div>
+    <div class="concept-card">
+      <h3>🔬 还原论</h3>
+      <p>把复杂系统拆解为简单部分，分别研究再整合。</p>
+    </div>
+    <div class="concept-card">
+      <h3>🧠 培根·笛卡儿·牛顿</h3>
+      <p>奠定科学方法、理性分析与力学体系的关键人物。</p>
+    </div>
+  </div>
+
+  <!-- 交互1: 排序（时间线） -->
+  <div class="interactive-box" id="sort-exercise">
+    <h2>⏳ 互动一：排列近代科学关键步骤</h2>
+    <p style="margin-bottom:0.8rem; color:#2c4055;">拖拽下列事件，按历史顺序排列（从上到下：最早 → 最晚）。</p>
+    <div class="sort-container" id="sortable-list">
+      <div class="sort-item" draggable="true" data-order="3"><span><span class="drag-handle">⠿</span>牛顿力学体系形成</span></div>
+      <div class="sort-item" draggable="true" data-order="1"><span><span class="drag-handle">⠿</span>哥白尼提出日心说</span></div>
+      <div class="sort-item" draggable="true" data-order="4"><span><span class="drag-handle">⠿</span>机械论与还原论成为主流</span></div>
+      <div class="sort-item" draggable="true" data-order="2"><span><span class="drag-handle">⠿</span>培根·笛卡儿奠定科学方法</span></div>
+    </div>
+    <div class="status-bar">
+      <button class="sort-btn" id="checkSortBtn">✅ 检查顺序</button>
+      <button class="btn-reset" id="resetSortBtn">↺ 重置</button>
+    </div>
+    <div class="feedback" id="sortFeedback"></div>
+  </div>
+
+  <!-- 交互2: 概念配对（选择题） -->
+  <div class="interactive-box" id="quiz-box">
+    <h2>🧪 互动二：概念检验</h2>
+    <p style="margin-bottom:0.6rem; color:#2c4055;"><strong>以下哪一项最符合“还原论”的核心思想？</strong></p>
+    <div class="quiz-option" data-correct="false">A. 世界是一个有机整体，不可分割</div>
+    <div class="quiz-option" data-correct="true">B. 把复杂系统拆解为简单部分分别研究</div>
+    <div class="quiz-option" data-correct="false">C. 所有现象都只能用数学公式描述</div>
+    <div class="quiz-option" data-correct="false">D. 科学应当完全依赖实验，不依赖推理</div>
+    <div class="feedback" id="quizFeedback"></div>
+    <div style="margin-top:0.6rem;">
+      <button class="btn-reset" id="resetQuizBtn">↺ 重新回答</button>
+    </div>
+  </div>
+
+  <!-- 交互3: 可点击的闪卡 -->
+  <div class="interactive-box">
+    <h2>🃏 互动三：点击闪卡 · 探索人物与思想</h2>
+    <p style="margin-bottom:0.8rem; color:#2c4055;">点击卡片翻转，查看解释。</p>
+    <div class="flashcard-grid" id="flashcardGrid">
+      <div class="flashcard" data-flipped="false">
+        <div class="front">哥白尼</div>
+        <div class="back">🌞 提出日心说，近代科学开端</div>
+      </div>
+      <div class="flashcard" data-flipped="false">
+        <div class="front">培根</div>
+        <div class="back">📘 强调实验与归纳法，科学方法奠基人</div>
+      </div>
+      <div class="flashcard" data-flipped="false">
+        <div class="front">笛卡儿</div>
+        <div class="back">🧠 理性主义，我思故我在，分析方法</div>
+      </div>
+      <div class="flashcard" data-flipped="false">
+        <div class="front">牛顿</div>
+        <div class="back">🍎 力学体系，机械论世界图景核心</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 总结 & 下一步 -->
+  <div class="summary-box">
+    <h3>📌 小结</h3>
+    <p>近代科学从哥白尼日心说启程，经过培根、笛卡儿、牛顿等人的发展，形成了以<strong>机械论</strong>和<strong>还原论</strong>为代表的世界图景。这种将世界拆解为零件、用因果规律分析的方法，为后来的系统思想提供了分析工具——先分解，再综合。</p>
+    <div class="next-steps">
+      <strong>➡️ 下一步：</strong> 探索系统思想如何超越还原论，强调整体性与涌现性。
+    </div>
+  </div>
+
+</div>
+
+<script>
+  (function() {
+    // ---------- 排序拖拽 ----------
+    const sortContainer = document.getElementById('sortable-list');
+    const sortFeedback = document.getElementById('sortFeedback');
+    const checkBtn = document.getElementById('checkSortBtn');
+    const resetSortBtn = document.getElementById('resetSortBtn');
+    let dragSrcEl = null;
+
+    function resetSortOrder() {
+      const items = Array.from(sortContainer.children);
+      items.sort((a, b) => parseInt(a.dataset.order) - parseInt(b.dataset.order));
+      items.forEach(item => sortContainer.appendChild(item));
+      sortFeedback.classList.remove('show');
+      sortFeedback.textContent = '';
+      checkBtn.disabled = false;
+    }
+
+    function handleDragStart(e) {
+      dragSrcEl = this;
+      this.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', this.innerHTML);
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault();
+      this.classList.add('drag-over');
+    }
+
+    function handleDragLeave(e) {
+      this.classList.remove('drag-over');
+    }
+
+    function handleDrop(e) {
+      e.preventDefault();
+      this.classList.remove('drag-over');
+      if (dragSrcEl && dragSrcEl !== this) {
+        const parent = sortContainer;
+        const children = Array.from(parent.children);
+        const srcIdx = children.indexOf(dragSrcEl);
+        const targetIdx = children.indexOf(this);
+        if (srcIdx < targetIdx) {
+          parent.insertBefore(dragSrcEl, this.nextSibling);
+        } else {
+          parent.insertBefore(dragSrcEl, this);
+        }
+      }
+    }
+
+    function handleDragEnd(e) {
+      this.classList.remove('dragging');
+      document.querySelectorAll('.sort-item').forEach(el => el.classList.remove('drag-over'));
+    }
+
+    function initDragEvents() {
+      document.querySelectorAll('.sort-item').forEach(item => {
+        item.setAttribute('draggable', 'true');
+        item.addEventListener('dragstart', handleDragStart);
+        item.addEventListener('dragover', handleDragOver);
+        item.addEventListener('dragleave', handleDragLeave);
+        item.addEventListener('drop', handleDrop);
+        item.addEventListener('dragend', handleDragEnd);
+      });
+    }
+
+    function checkSortOrder() {
+      const items = Array.from(sortContainer.children);
+      const correct = items.every((item, idx) => parseInt(item.dataset.order) === idx + 1);
+      sortFeedback.classList.add('show');
+      if (correct) {
+        sortFeedback.className = 'feedback show correct';
+        sortFeedback.textContent = '✅ 完全正确！历史顺序：哥白尼日心说 → 培根·笛卡儿 → 牛顿力学 → 机械论与还原论成为主流。';
+        checkBtn.disabled = true;
+      } else {
+        sortFeedback.className = 'feedback show wrong';
+        sortFeedback.textContent = '❌ 顺序不对，再试试吧。提示：哥白尼最早，机械论成为主流最晚。';
+      }
+    }
+
+    resetSortBtn.addEventListener('click', resetSortOrder);
+    checkBtn.addEventListener('click', checkSortOrder);
+    initDragEvents();
+    resetSortOrder(); // 初始排序
+
+    // ---------- 选择题 ----------
+    const quizOptions = document.querySelectorAll('#quiz-box .quiz-option');
+    const quizFeedback = document.getElementById('quizFeedback');
+    const resetQuizBtn = document.getElementById('resetQuizBtn');
+    let quizAnswered = false;
+
+    function resetQuiz() {
+      quizOptions.forEach(opt => {
+        opt.classList.remove('correct', 'wrong', 'disabled');
+      });
+      quizFeedback.classList.remove('show', 'correct', 'wrong');
+      quizFeedback.textContent = '';
+      quizAnswered = false;
+    }
+
+    quizOptions.forEach(opt => {
+      opt.addEventListener('click', function() {
+        if (quizAnswered) return;
+        const isCorrect = this.dataset.correct === 'true';
+        quizOptions.forEach(o => o.classList.add('disabled'));
+        if (isCorrect) {
+          this.classList.add('correct');
+          quizFeedback.className = 'feedback show correct';
+          quizFeedback.textContent = '🎉 正确！还原论正是将复杂系统拆解为简单部分分别研究。';
+        } else {
+          this.classList.add('wrong');
+          quizFeedback.className = 'feedback show wrong';
+          quizFeedback.textContent = '❌ 不对。还原论的核心是“拆解为简单部分”，请再想想。';
+        }
+        quizAnswered = true;
+      });
+    });
+
+    resetQuizBtn.addEventListener('click', resetQuiz);
+
+    // ---------- 闪卡 ----------
+    const flashcards = document.querySelectorAll('.flashcard');
+    flashcards.forEach(card => {
+      card.addEventListener('click', function() {
+        const flipped = this.dataset.flipped === 'true';
+        if (flipped) {
+          this.classList.remove('flipped');
+          this.dataset.flipped = 'false';
+        } else {
+          this.classList.add('flipped');
+          this.dataset.flipped = 'true';
+        }
+      });
+    });
+
+  })();
+</script>
+
+</body>
+</html>

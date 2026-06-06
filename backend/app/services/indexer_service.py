@@ -10,10 +10,10 @@ import os
 import re
 from pathlib import Path
 
-logger = logging.getLogger("deepread.indexer")
+from app.utils.file_ops import atomic_write_json
+from app.core.config import DATA_ROOT
 
-# ── DATA_ROOT: go up 4 dirs from app/services/indexer_service.py → project root, then data/ ──
-DATA_ROOT = Path(__file__).resolve().parent.parent.parent.parent / "data"
+logger = logging.getLogger("deepread.indexer")
 
 # ====================================================================
 # Helpers
@@ -63,11 +63,9 @@ def _read_meta(book_name: str) -> dict:
 
 
 def _write_meta(book_name: str, data: dict) -> None:
-    """Persist .meta.json atomically."""
+    """Persist .meta.json atomically (delegates to atomic_write_json)."""
     path = _meta_path(book_name)
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text(_json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-    tmp.replace(path)
+    atomic_write_json(path, data)
 
 
 def _update_progress(book_name: str, indexed: int, total: int, status: str) -> None:
@@ -100,12 +98,7 @@ def load_chapters_index(book_name: str) -> dict:
 def save_chapters_index(book_name: str, data: dict) -> None:
     """Persist the full chapters_index.json atomically."""
     path = _index_path(book_name)
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text(
-        _json.dumps(data, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
-    tmp.replace(path)
+    atomic_write_json(path, data)
 
 
 # ====================================================================
@@ -169,119 +162,171 @@ async def _summarize_one_chapter(client, chapter_path: str, content: str) -> dic
 # ====================================================================
 
 async def build_book_index(book_name: str, api_key: str = "") -> None:
-    """Background task: summarize all unindexed chapters via async LLM pool.
+    """Background task: summarize all unindexed chapters via async LLM pool."""
+    import traceback
+    import json as _json2
+    from pathlib import Path as _Path
 
-    Concurrency capped at 5. Per-chapter progress written to .meta.json in real time
-    so the frontend polling endpoint can expose indexed_chapters / total_chapters.
+    print(f"🚀 [Indexer] 后台线程已成功接管任务: {book_name}")
 
-    Args:
-        book_name: Safe title slug from document processor.
-        api_key:  User's DeepSeek API key (from x-api-key request header).
-                  Falls back to DEEPSEEK_API_KEY env var.
-    """
-    logger.info("🚀 开始为书籍 %s 构建后台知识索引...", book_name)
+    # 1. 强制定位并创建基础目录 (使用全局 DATA_ROOT)
+    wiki_dir = DATA_ROOT / "wiki" / book_name
+    wiki_dir.mkdir(parents=True, exist_ok=True)
+    meta_path = wiki_dir / ".meta.json"
 
-    raw = _raw_dir(book_name)
-    if not raw:
-        logger.warning("Indexer: raw dir not found for %s", book_name)
-        return
+    # 2. 强制写入初始 processing 状态（打破前端死等）
+    #    Count real chapters before the try block so we never lose the total
+    raw_dir = DATA_ROOT / "raw" / "sources" / book_name
+    total_chapters = 0
+    if raw_dir.is_dir():
+        md_files_init = sorted(
+            [f for f in raw_dir.rglob("*.md") if f.is_file() and f.stem != raw_dir.name],
+            key=lambda f: f.name,
+        )
+        total_chapters = len(md_files_init)
 
-    # Collect all chapter files
-    md_files = sorted(
-        [f for f in raw.rglob("*.md") if f.is_file() and f.stem != raw.name],
-        key=lambda f: f.name,
-    )
-    if not md_files:
-        logger.info("Indexer: no chapters found for %s", book_name)
-        _write_meta(book_name, {**_read_meta(book_name), "indexing_status": "completed"})
-        logger.info("✅ 书籍 %s 知识索引构建完成！（无章节）", book_name)
-        return
-
-    total = len(md_files)
-
-    # Load existing index to skip already-indexed chapters
-    existing = load_chapters_index(book_name)
-
-    # ── Create LLM client (may fail if DEEPSEEK_API_KEY is not set) ──
+    meta_data = {
+        "indexing_status": "processing",
+        "indexed_chapters": 0,
+        "total_chapters": total_chapters,
+    }
     try:
-        client = _make_client(api_key)
+        atomic_write_json(meta_path, meta_data)
+        print(f"✅ [Indexer] 初始状态文件 .meta.json 强制创建成功 (total={total_chapters})")
     except Exception as e:
-        logger.error("❌ 无法创建 LLM 客户端: %s。索引任务终止。", str(e))
-        _update_progress(book_name, total, total, "failed")
-        return
+        print(f"⚠️ [Indexer] 写入状态文件失败: {e}")
 
-    sem = __import__("asyncio").Semaphore(5)
-
-    async def _index_one(path: str, content: str) -> tuple[str, dict | None]:
-        async with sem:
-            try:
-                result = await _summarize_one_chapter(client, path, content)
-                return path, result
-            except Exception as e:
-                logger.error("❌ 章节 %s 索引失败: %s", path, str(e))
-                return path, None
-
-    tasks = []
-    for f in md_files:
-        rel = str(f.relative_to(raw)).replace("\\", "/")
-        if existing.get(rel, {}).get("is_indexed"):
-            continue  # already done
-        try:
-            content = f.read_text(encoding="utf-8")[:4000]
-        except Exception:
-            logger.exception("Indexer: failed to read %s", rel)
-            existing[rel] = {"summary": "", "tags": [], "is_indexed": True}
-            save_chapters_index(book_name, existing)
-            continue
-        tasks.append(_index_one(rel, content))
-
-    # Set initial progress
-    already_indexed = sum(1 for v in existing.values() if v.get("is_indexed"))
-    _update_progress(book_name, already_indexed, total, "processing")
-
-    if not tasks:
-        logger.info("Indexer: all chapters already indexed for %s", book_name)
-        _update_progress(book_name, total, total, "completed")
-        logger.info("✅ 书籍 %s 知识索引构建完成！（全部已索引）", book_name)
-        return
-
-    # ── Run tasks with as_completed for real-time progress ──
-    import asyncio as _asyncio
-    indexed = already_indexed
-    for coro in _asyncio.as_completed(tasks):
-        try:
-            path, result = await coro
-        except Exception as exc:
-            logger.error("❌ 索引任务崩溃: %s", str(exc))
-            indexed += 1
-            _update_progress(book_name, indexed, total, "processing")
-            continue
-
-        indexed += 1
-        if result is not None:
-            existing[path] = {
-                "summary": result.get("summary", ""),
-                "tags": result.get("tags", []),
-                "is_indexed": True,
-            }
-            logger.info("  📝 [%d/%d] %s → %s", indexed, total, path, result.get("summary", "")[:30])
-        else:
-            existing[path] = {"summary": "", "tags": [], "is_indexed": True}
-            logger.warning("  ⚠️ [%d/%d] %s → 空结果 (LLM 返回不可解析)", indexed, total, path)
-
-        # Flush per-chapter progress + index to disk
-        _update_progress(book_name, indexed, total, "processing")
-        try:
-            save_chapters_index(book_name, existing)
-        except Exception:
-            pass  # will save at the end anyway
-
-    # Finalize
+    # 3. 执行真正的沙盒级索引逻辑
     try:
-        save_chapters_index(book_name, existing)
-        logger.info("Indexer: saved chapters_index.json for %s (%d chapters)", book_name, len(existing))
-    except Exception:
-        logger.exception("Indexer: failed to save chapters_index.json for %s", book_name)
+        print("⚙️ [Indexer] 开始执行章节解析与大模型调用...")
 
-    _update_progress(book_name, total, total, "completed")
-    logger.info("✅ 书籍 %s 知识索引构建完成！", book_name)
+        raw = _raw_dir(book_name)
+        if not raw:
+            logger.warning("Indexer: raw dir not found for %s", book_name)
+            return
+
+        # Collect all chapter files
+        md_files = sorted(
+            [f for f in raw.rglob("*.md") if f.is_file() and f.stem != raw.name],
+            key=lambda f: f.name,
+        )
+        if not md_files:
+            logger.info("Indexer: no chapters found for %s", book_name)
+            _write_meta(book_name, {**_read_meta(book_name), "indexing_status": "completed"})
+            logger.info("✅ 书籍 %s 知识索引构建完成！（无章节）", book_name)
+            return
+
+        total = len(md_files)
+
+        # Load existing index to skip already-indexed chapters
+        existing = load_chapters_index(book_name)
+
+        # ── Create LLM client (may fail if DEEPSEEK_API_KEY is not set) ──
+        try:
+            client = _make_client(api_key)
+        except Exception as e:
+            logger.error("❌ 无法创建 LLM 客户端: %s。索引任务终止。", str(e))
+            _update_progress(book_name, total, total, "failed")
+            return
+
+        sem = __import__("asyncio").Semaphore(5)
+
+        async def _index_one(path: str, content: str) -> tuple[str, dict | None]:
+            async with sem:
+                try:
+                    result = await _summarize_one_chapter(client, path, content)
+                    return path, result
+                except Exception as e:
+                    logger.error("❌ 章节 %s 索引失败: %s", path, str(e))
+                    return path, None
+
+        tasks = []
+        for f in md_files:
+            rel = str(f.relative_to(raw)).replace("\\", "/")
+            if existing.get(rel, {}).get("is_indexed"):
+                continue  # already done
+            try:
+                content = f.read_text(encoding="utf-8")[:4000]
+            except Exception:
+                logger.exception("Indexer: failed to read %s", rel)
+                existing[rel] = {"summary": "", "tags": [], "is_indexed": True}
+                save_chapters_index(book_name, existing)
+                continue
+            tasks.append(_index_one(rel, content))
+
+        # Set initial progress
+        already_indexed = sum(1 for v in existing.values() if v.get("is_indexed"))
+        _update_progress(book_name, already_indexed, total, "processing")
+
+        if not tasks:
+            logger.info("Indexer: all chapters already indexed for %s", book_name)
+            _update_progress(book_name, total, total, "completed")
+            logger.info("✅ 书籍 %s 知识索引构建完成！（全部已索引）", book_name)
+            return
+
+        # ── Run tasks with as_completed for real-time progress ──
+        import asyncio as _asyncio
+        indexed = already_indexed
+        for coro in _asyncio.as_completed(tasks):
+            try:
+                path, result = await coro
+            except Exception as exc:
+                logger.error("❌ 索引任务崩溃: %s", str(exc))
+                indexed += 1
+                _update_progress(book_name, indexed, total, "processing")
+                continue
+
+            indexed += 1
+            if result is not None:
+                existing[path] = {
+                    "summary": result.get("summary", ""),
+                    "tags": result.get("tags", []),
+                    "is_indexed": True,
+                }
+                logger.info("  📝 [%d/%d] %s → %s", indexed, total, path, result.get("summary", "")[:30])
+            else:
+                existing[path] = {"summary": "", "tags": [], "is_indexed": True}
+                logger.warning("  ⚠️ [%d/%d] %s → 空结果 (LLM 返回不可解析)", indexed, total, path)
+
+            # Flush per-chapter progress + index to disk
+            _update_progress(book_name, indexed, total, "processing")
+            try:
+                save_chapters_index(book_name, existing)
+            except Exception:
+                pass  # will save at the end anyway
+
+        # Finalize
+        try:
+            save_chapters_index(book_name, existing)
+            logger.info("Indexer: saved chapters_index.json for %s (%d chapters)", book_name, len(existing))
+        except Exception:
+            logger.exception("Indexer: failed to save chapters_index.json for %s", book_name)
+
+        _update_progress(book_name, total, total, "completed")
+        logger.info("✅ 书籍 %s 知识索引构建完成！", book_name)
+        print("🎉 [Indexer] 全部索引构建完成！")
+
+        # ── Auto-build global knowledge graph from index summaries ──
+        try:
+            print("🧠 [GraphBuilder] 开始构建全局语义知识图谱…")
+            from .graph_service import build_global_knowledge_graph
+            graph_result = await build_global_knowledge_graph(book_name, api_key=api_key)
+            if graph_result.get("status") == "ok":
+                print(f"✅ [GraphBuilder] 全局知识图谱已就绪: {graph_result['nodes']} 节点, {graph_result['edges']} 边")
+            else:
+                print(f"⚠️ [GraphBuilder] 图谱构建失败: {graph_result.get('message', 'unknown')}")
+        except Exception as _graph_exc:
+            print(f"⚠️ [GraphBuilder] 图谱构建异常（索引不受影响）: {_graph_exc}")
+            logger.exception("GraphBuilder: failed for %s", book_name)
+
+    except Exception as e:
+        print(f"💥 [致命崩溃] Indexer 引擎运行中断: {str(e)}")
+        print(traceback.format_exc())
+        logger.exception("💥 [致命崩溃] Indexer 引擎运行中断 — %s", book_name)
+
+        # 兜底：写回 failed 状态释放前端
+        meta_data["indexing_status"] = "failed"
+        try:
+            atomic_write_json(meta_path, meta_data)
+        except Exception:
+            pass

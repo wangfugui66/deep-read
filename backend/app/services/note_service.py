@@ -21,11 +21,12 @@ import uuid as _uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
+from app.core.config import DATA_ROOT
 
 def _notes_dir(book_name: str, data_root: str | None = None) -> Path:
     """Resolve the notes directory for a book."""
     if data_root is None:
-        data_root = Path(__file__).parent.parent / "data"
+        data_root = DATA_ROOT
     return Path(data_root) / "wiki" / book_name / "notes"
 
 
