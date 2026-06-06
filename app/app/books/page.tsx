@@ -133,7 +133,7 @@ export default function BookshelfPage() {
         <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <BookOpen size={18} className="text-neutral-700" />
-            <h1 className="text-base font-semibold text-neutral-800">DeepRead</h1>
+            <h1 className="text-base font-semibold text-neutral-800">FluxRead</h1>
             <span className="text-xs text-neutral-400 ml-1">· 书架</span>
           </div>
           <button

@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "DeepRead-v2",
-  description: "AI 深度阅读助手 — 知识网格 · 极简摄入",
+  title: "FluxRead — The Interactive Knowledge Sandbox",
+  description: "AI 深度阅读助手 — 流变涌现 · 深度摄入",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
