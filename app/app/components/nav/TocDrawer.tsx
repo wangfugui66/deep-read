@@ -98,7 +98,9 @@ export default function TocDrawer({ bookName, isOpen, onClose, onOpenWizard, ref
   const [skeletonError, setSkeletonError] = useState<string | null>(null);
   const [aggregateToast, setAggregateToast] = useState<string | null>(null);
 
-  const { currentChapterPath, setChapter, setWizardOpen, indexingStatus, setIndexingStatus, indexedCount, totalCount, setIndexingProgress } = useReaderStore();
+  const { currentChapterPath, setChapter, setWizardOpen, indexingStatus, setIndexingStatus, indexedCount, totalCount, setIndexingProgress, readingMode } = useReaderStore();
+
+  const isImmersive = readingMode === "immersive";
 
   // ── Build strategy lookup map from skeleton ──
   const strategyMap = useMemo<Map<string, StrategyInfo>>(() => {
@@ -494,8 +496,8 @@ export default function TocDrawer({ bookName, isOpen, onClose, onOpenWizard, ref
         )}
 
         <nav className="overflow-y-auto h-[calc(100vh-3rem)] py-2">
-          {/* ── Skeleton module overview — TeachAny aggregation entry points ── */}
-          {hasSkeleton && (tocData?.modules?.length || 0) > 0 && (
+          {/* ── Skeleton module overview — TeachAny aggregation entry points (hidden in immersive) ── */}
+          {!isImmersive && hasSkeleton && (tocData?.modules?.length || 0) > 0 && (
             <div className="px-3 pb-2 mb-2 border-b border-neutral-100">
               <div className="text-[10px] font-medium text-neutral-400 uppercase tracking-wide mb-1.5">
                 聚合课件
@@ -548,6 +550,7 @@ export default function TocDrawer({ bookName, isOpen, onClose, onOpenWizard, ref
               chapters={chapters}
               strategyMap={strategyMap}
               readPaths={readPaths}
+              isImmersive={isImmersive}
             />
           )}
         </nav>
@@ -561,7 +564,7 @@ export default function TocDrawer({ bookName, isOpen, onClose, onOpenWizard, ref
 // ====================================================================
 
 function TreeNodeList({
-  nodes, currentPath, collapsed, indentMap, onSelect, onToggleCollapse, chapters, strategyMap, readPaths,
+  nodes, currentPath, collapsed, indentMap, onSelect, onToggleCollapse, chapters, strategyMap, readPaths, isImmersive,
 }: {
   nodes: TocNode[];
   currentPath: string | null;
@@ -572,6 +575,7 @@ function TreeNodeList({
   chapters: ChapterRef[];
   strategyMap: Map<string, StrategyInfo>;
   readPaths: Set<string>;
+  isImmersive: boolean;
 }) {
   return (
     <>
@@ -622,13 +626,13 @@ function TreeNodeList({
                   <span className="w-4 shrink-0" />
                 )}
 
-                <span className={`truncate ${isIntensive && !isRead ? "font-bold" : ""}`}>
+                <span className={`truncate ${!isImmersive && isIntensive && !isRead ? "font-bold" : ""}`}>
                   {node.displayTitle}
                 </span>
               </span>
 
-              {/* Strategy badge — only 精读 gets visual emphasis */}
-              {isIntensive && !isRead && (
+              {/* Strategy badge — only 精读 gets visual emphasis, hidden in immersive mode */}
+              {!isImmersive && isIntensive && !isRead && (
                 <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium border shrink-0 bg-red-50 border-red-200 text-red-600">
                   <BookOpen size={10} />
                   精读
@@ -647,6 +651,7 @@ function TreeNodeList({
                 chapters={chapters}
                 strategyMap={strategyMap}
                 readPaths={readPaths}
+                isImmersive={isImmersive}
               />
             )}
           </div>

@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>新的综合：从系统科学到系统论</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    background: #f5f7fa;
+    color: #1a2a3a;
+    line-height: 1.6;
+    padding: 2rem 1rem;
+  }
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 28px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+    padding: 2rem 2rem 2.5rem;
+  }
+  h1 {
+    font-size: 2.2rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: #0b2b4a;
+    margin-bottom: 0.25rem;
+    border-left: 6px solid #2a7faa;
+    padding-left: 1rem;
+  }
+  .subhead {
+    font-size: 1rem;
+    color: #5a6f82;
+    margin-bottom: 1.8rem;
+    padding-left: 1.6rem;
+    font-weight: 400;
+  }
+  .hook {
+    background: #e8f0f8;
+    border-radius: 20px;
+    padding: 1.6rem 2rem;
+    margin-bottom: 2rem;
+    font-size: 1.1rem;
+    border-left: 4px solid #2a7faa;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+  }
+  .hook strong { color: #0b2b4a; }
+  .hook em { color: #2a7faa; font-style: normal; font-weight: 500; }
+  .section-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 2rem 0 1rem;
+    color: #0b2b4a;
+    border-bottom: 2px solid #dce5ed;
+    padding-bottom: 0.4rem;
+  }
+  .concept-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 1.2rem 0;
+  }
+  .concept-card {
+    flex: 1 1 180px;
+    background: #f9fbfd;
+    border-radius: 16px;
+    padding: 1.2rem 1.2rem 1rem;
+    border: 1px solid #e2e9f0;
+    transition: 0.2s;
+  }
+  .concept-card:hover { border-color: #2a7faa; box-shadow: 0 4px 12px rgba(42,127,170,0.08); }
+  .concept-card h3 { font-size: 1.1rem; color: #1f4b6e; margin-bottom: 0.3rem; }
+  .concept-card p { font-size: 0.95rem; color: #3d5368; }
+  .interactive-area {
+    background: #f7faff;
+    border-radius: 24px;
+    padding: 1.5rem 1.8rem;
+    margin: 1.8rem 0;
+    border: 1px solid #dce8f2;
+  }
+  .interactive-area h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #1a3d5c;
+  }
+  .quiz-options { display: flex; flex-direction: column; gap: 0.6rem; margin: 0.8rem 0; }
+  .quiz-option {
+    background: white;
+    border: 2px solid #d4dfe9;
+    border-radius: 40px;
+    padding: 0.7rem 1.2rem;
+    cursor: pointer;
+    transition: 0.15s;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #1a2a3a;
+  }
+  .quiz-option:hover { border-color: #2a7faa; background: #eef6fd; }
+  .quiz-option.selected { border-color: #2a7faa; background: #dcecf9; }
+  .quiz-option.correct { border-color: #1f8b4c; background: #e1f3e8; }
+  .quiz-option.incorrect { border-color: #b13a3a; background: #fde8e8; }
+  .feedback {
+    margin-top: 0.8rem;
+    padding: 0.7rem 1.2rem;
+    border-radius: 40px;
+    font-weight: 500;
+    display: none;
+  }
+  .feedback.show { display: block; }
+  .feedback.correct { background: #e1f3e8; color: #0f5a2e; }
+  .feedback.incorrect { background: #fde8e8; color: #8a2a2a; }
+  .btn {
+    background: #2a7faa;
+    color: white;
+    border: none;
+    padding: 0.6rem 1.6rem;
+    border-radius: 40px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.15s;
+    margin-top: 0.5rem;
+    display: inline-block;
+  }
+  .btn:hover { background: #1f5f82; transform: scale(1.02); }
+  .btn-outline {
+    background: transparent;
+    border: 2px solid #2a7faa;
+    color: #2a7faa;
+  }
+  .btn-outline:hover { background: #eef6fd; }
+  .drag-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    min-height: 80px;
+    padding: 1rem;
+    background: white;
+    border-radius: 20px;
+    border: 2px dashed #b8ccdd;
+    margin: 0.6rem 0;
+  }
+  .drag-item {
+    background: #e2ecf5;
+    padding: 0.5rem 1.2rem;
+    border-radius: 40px;
+    font-weight: 500;
+    cursor: grab;
+    user-select: none;
+    border: 2px solid transparent;
+    transition: 0.1s;
+    color: #1a3d5c;
+  }
+  .drag-item:active { cursor: grabbing; opacity: 0.7; }
+  .drag-item.dropped { background: #c3dcee; border-color: #2a7faa; }
+  .drop-zone {
+    background: #f1f7fe;
+    border-radius: 20px;
+    padding: 0.8rem 1.2rem;
+    margin: 0.5rem 0;
+    border: 2px dashed #b0c8dd;
+    min-height: 60px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    align-items: center;
+  }
+  .drop-zone-label {
+    font-weight: 600;
+    color: #1f4b6e;
+    margin-right: 0.5rem;
+    font-size: 0.95rem;
+  }
+  .reset-link {
+    color: #2a7faa;
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-left: 0.8rem;
+    text-decoration: underline;
+  }
+  .summary-box {
+    background: #eaf3fa;
+    border-radius: 20px;
+    padding: 1.4rem 1.8rem;
+    margin-top: 2rem;
+  }
+  .summary-box h3 { color: #0b2b4a; margin-bottom: 0.5rem; }
+  .next-steps {
+    background: #f0f5f0;
+    border-radius: 20px;
+    padding: 1.2rem 1.8rem;
+    margin-top: 1.2rem;
+    border-left: 4px solid #1f8b4c;
+  }
+  .tag {
+    display: inline-block;
+    background: #dce5ed;
+    padding: 0.2rem 0.8rem;
+    border-radius: 40px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #2c4d6e;
+    margin-right: 0.4rem;
+  }
+  @media (max-width: 600px) {
+    .container { padding: 1.2rem; }
+    h1 { font-size: 1.7rem; }
+    .concept-card { flex: 1 1 100%; }
+    .interactive-area { padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>新的综合：从系统科学到系统论</h1>
+  <div class="subhead"><span class="tag">系统科学</span><span class="tag">控制论</span><span class="tag">钱学森</span>  ·  20世纪50–80年代</div>
+
+  <!-- ABT Hook -->
+  <div class="hook">
+    <strong>📘 And（背景）</strong> 20世纪中期，控制论、信息论、系统论三大理论几乎同时在西方兴起，并迅速传播到中国。<br>
+    <strong>🔀 But（转折）</strong> 然而，这些理论各自独立发展，缺乏统一的框架，学者们难以看到它们之间的深层联系。<br>
+    <strong>✅ Therefore（因此）</strong> 钱学森提出“系统科学体系”，将控制论、信息论、系统论融为一炉，推动了中国系统论研究的蓬勃发展。
+  </div>
+
+  <!-- Key Concepts -->
+  <div class="section-title">📌 核心概念</div>
+  <div class="concept-grid">
+    <div class="concept-card"><h3>控制论</h3><p>研究机器与生物中通信与控制的共同规律，强调反馈与调节。</p></div>
+    <div class="concept-card"><h3>信息论</h3><p>研究信息的传输、存储与处理，量化信息与不确定性。</p></div>
+    <div class="concept-card"><h3>系统论</h3><p>研究系统整体与部分的关系，强调整体性、层次性与开放性。</p></div>
+    <div class="concept-card"><h3>钱学森体系</h3><p>提出系统科学体系，将控制论、信息论、系统论统一为系统科学。</p></div>
+  </div>
+
+  <!-- Interactive 1: Concept Quiz -->
+  <div class="interactive-area" id="quiz1">
+    <h3>✏️ 知识自测</h3>
+    <p style="margin-bottom:0.8rem;">以下哪一项是钱学森在系统科学领域最重要的贡献？</p>
+    <div class="quiz-options" id="q1Options">
+      <div class="quiz-option" data-correct="true">提出系统科学体系，将控制论、信息论、系统论统一</div>
+      <div class="quiz-option" data-correct="false">发明了第一台电子计算机</div>
+      <div class="quiz-option" data-correct="false">创立了信息论学科</div>
+      <div class="quiz-option" data-correct="false">提出相对论</div>
+    </div>
+    <div class="feedback" id="q1Feedback"></div>
+    <button class="btn" id="q1Submit">确认答案</button>
+    <button class="btn btn-outline" id="q1Reset" style="margin-left:0.5rem;">重选</button>
+  </div>
+
+  <!-- Interactive 2: Drag & Drop Sort (timeline / concept matching) -->
+  <div class="interactive-area" id="dragArea">
+    <h3>🧩 拖拽归类：系统科学三支柱</h3>
+    <p style="margin-bottom:0.5rem;">把下面的概念拖放到对应的理论名称下面（每个放一个）</p>
+    <div style="display:flex; flex-wrap:wrap; gap:1.2rem; justify-content:space-between;">
+      <div style="flex:1; min-width:140px;">
+        <div class="drop-zone-label">🔁 控制论</div>
+        <div class="drop-zone" id="dropControl" data-target="control"></div>
+      </div>
+      <div style="flex:1; min-width:140px;">
+        <div class="drop-zone-label">📊 信息论</div>
+        <div class="drop-zone" id="dropInfo" data-target="info"></div>
+      </div>
+      <div style="flex:1; min-width:140px;">
+        <div class="drop-zone-label">🌐 系统论</div>
+        <div class="drop-zone" id="dropSystem" data-target="system"></div>
+      </div>
+    </div>
+    <div class="drag-container" id="dragContainer">
+      <div class="drag-item" data-concept="feedback">反馈与调节</div>
+      <div class="drag-item" data-concept="entropy">信息熵与传输</div>
+      <div class="drag-item" data-concept="holism">整体性原理</div>
+    </div>
+    <div style="margin-top:0.8rem; display:flex; gap:0.8rem; flex-wrap:wrap;">
+      <button class="btn" id="checkDrag">检查匹配</button>
+      <button class="btn btn-outline" id="resetDrag">重置</button>
+    </div>
+    <div class="feedback" id="dragFeedback" style="margin-top:0.5rem;"></div>
+  </div>
+
+  <!-- Interactive 3: Flashcard (click to reveal) -->
+  <div class="interactive-area" id="flashcardArea">
+    <h3>🃏 概念闪卡</h3>
+    <p style="margin-bottom:0.8rem;">点击卡片翻转，看看你记得多少</p>
+    <div style="display:flex; flex-wrap:wrap; gap:1rem; justify-content:center;">
+      <div class="flashcard" data-side="front" style="background:#fff; border:2px solid #d4dfe9; border-radius:20px; width:160px; height:120px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:0.3s; font-weight:600; color:#1a3d5c; box-shadow:0 2px 8px rgba(0,0,0,0.04);" onclick="flipCard(this)">
+        <span class="front-text">控制论</span>
+        <span class="back-text" style="display:none; font-weight:400; font-size:0.9rem;">研究通信与控制的共同规律，强调反馈</span>
+      </div>
+      <div class="flashcard" data-side="front" style="background:#fff; border:2px solid #d4dfe9; border-radius:20px; width:160px; height:120px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:0.3s; font-weight:600; color:#1a3d5c; box-shadow:0 2px 8px rgba(0,0,0,0.04);" onclick="flipCard(this)">
+        <span class="front-text">信息论</span>
+        <span class="back-text" style="display:none; font-weight:400; font-size:0.9rem;">研究信息传输与量化，核心概念是信息熵</span>
+      </div>
+      <div class="flashcard" data-side="front" style="background:#fff; border:2px solid #d4dfe9; border-radius:20px; width:160px; height:120px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:0.3s; font-weight:600; color:#1a3d5c; box-shadow:0 2px 8px rgba(0,0,0,0.04);" onclick="flipCard(this)">
+        <span class="front-text">系统论</span>
+        <span class="back-text" style="display:none; font-weight:400; font-size:0.9rem;">研究整体与部分，整体大于部分之和</span>
+      </div>
+      <div class="flashcard" data-side="front" style="background:#fff; border:2px solid #d4dfe9; border-radius:20px; width:160px; height:120px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:0.3s; font-weight:600; color:#1a3d5c; box-shadow:0 2px 8px rgba(0,0,0,0.04);" onclick="flipCard(this)">
+        <span class="front-text">钱学森体系</span>
+        <span class="back-text" style="display:none; font-weight:400; font-size:0.9rem;">提出系统科学体系，统一三论</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary & Next Steps -->
+  <div class="summary-box">
+    <h3>📖 本节小结</h3>
+    <p>在20世纪50–80年代，控制论、信息论、系统论先后传入中国。钱学森敏锐地看到它们的内在联系，提出了<strong>系统科学体系</strong>，将这三者综合为统一的系统科学，推动了中国系统论研究的蓬勃发展。这一“新的综合”不仅影响了工程、管理、生物等领域，也奠定了现代系统思维的基础。</p>
+  </div>
+  <div class="next-steps">
+    <strong>➡️ 下一步建议</strong><br>
+    可以进一步探索钱学森的《工程控制论》与系统科学体系的具体内容，对比贝塔朗菲的一般系统论，思考系统思维在当代人工智能与复杂网络中的应用。
+  </div>
+</div>
+
+<script>
+  // ----- Quiz 1 -----
+  (function() {
+    const options = document.querySelectorAll('#q1Options .quiz-option');
+    let selected = null;
+    const feedback = document.getElementById('q1Feedback');
+    const submitBtn = document.getElementById('q1Submit');
+    const resetBtn = document.getElementById('q1Reset');
+
+    function clearSelection() {
+      options.forEach(o => o.classList.remove('selected', 'correct', 'incorrect'));
+      feedback.classList.remove('show', 'correct', 'incorrect');
+      selected = null;
+    }
+
+    options.forEach(opt => {
+      opt.addEventListener('click', function() {
+        if (this.classList.contains('correct') || this.classList.contains('incorrect')) return;
+        options.forEach(o => o.classList.remove('selected'));
+        this.classList.add('selected');
+        selected = this;
+      });
+    });
+
+    submitBtn.addEventListener('click', function() {
+      if (!selected) {
+        feedback.textContent = '请先选择一个答案。';
+        feedback.className = 'feedback show incorrect';
+        return;
+      }
+      const isCorrect = selected.dataset.correct === 'true';
+      options.forEach(o => {
+        if (o === selected) {
+          o.classList.add(isCorrect ? 'correct' : 'incorrect');
+        }
+        o.classList.remove('selected');
+      });
+      feedback.textContent = isCorrect ? '✅ 正确！钱学森提出了系统科学体系，将控制论、信息论、系统论统一。' : '❌ 再想想。钱学森最重要的贡献是提出系统科学体系。';
+      feedback.className = 'feedback show ' + (isCorrect ? 'correct' : 'incorrect');
+    });
+
+    resetBtn.addEventListener('click', function() {
+      clearSelection();
+      feedback.textContent = '';
+      feedback.className = 'feedback';
+    });
+  })();
+
+  // ----- Drag & Drop -----
+  (function() {
+    const dragItems = document.querySelectorAll('.drag-item');
+    const dropZones = document.querySelectorAll('.drop-zone');
+    const container = document.getElementById('dragContainer');
+    const checkBtn = document.getElementById('checkDrag');
+    const resetBtn = document.getElementById('resetDrag');
+    const dragFeedback = document.getElementById('dragFeedback');
+    let dragData = null;
+
+    // correct mapping
+    const correctMap = {
+      'feedback': 'control',
+      'entropy': 'info',
+      'holism': 'system'
+    };
+
+    function resetDrag() {
+      // move all items back to container
+      dragItems.forEach(item => {
+        if (item.parentNode !== container) {
+          container.appendChild(item);
+        }
+        item.classList.remove('dropped');
+        item.draggable = true;
+      });
+      dragFeedback.classList.remove('show', 'correct', 'incorrect');
+      dragFeedback.textContent = '';
+    }
+
+    // make items draggable
+    dragItems.forEach(item => {
+      item.draggable = true;
+      item.addEventListener('dragstart', function(e) {
+        dragData = this;
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      item.addEventListener('dragend', function() {
+        dragData = null;
+      });
+    });
+
+    dropZones.forEach(zone => {
+      zone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+      });
+      zone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        if (!dragData) return;
+        // if item already in a drop zone, remove it
+        if (dragData.parentNode.classList.contains('drop-zone')) {
+          dragData.parentNode.removeChild(dragData);
+        } else {
+          // remove from container
+          container.removeChild(dragData);
+        }
+        this.appendChild(dragData);
+        dragData.classList.add('dropped');
+        dragData.draggable = false; // prevent re-drag after drop
+        dragData = null;
+        dragFeedback.classList.remove('show', 'correct', 'incorrect');
+        dragFeedback.textContent = '';
+      });
+    });
+
+    checkBtn.addEventListener('click', function() {
+      let allCorrect = true;
+      let totalItems = 0;
+      dropZones.forEach(zone => {
+        const target = zone.dataset.target;
+        const items = zone.querySelectorAll('.drag-item');
+        items.forEach(item => {
+          totalItems++;
+          const concept = item.dataset.concept;
+          if (correctMap[concept] !== target) {
+            allCorrect = false;
+          }
+        });
+      });
+      // also check if any items remain in container (not placed)
+      const remaining = container.querySelectorAll('.drag-item').length;
+      if (remaining > 0) {
+        dragFeedback.textContent = '⚠️ 还有概念没有被拖放到任何区域，请全部拖放。';
+        dragFeedback.className = 'feedback show incorrect';
+        return;
+      }
+      if (totalItems !== 3) {
+        dragFeedback.textContent = '⚠️ 每个区域只能放一个概念，请调整。';
+        dragFeedback.className = 'feedback show incorrect';
+        return;
+      }
+      if (allCorrect) {
+        dragFeedback.textContent = '✅ 完美！反馈与调节 → 控制论；信息熵 → 信息论；整体性 → 系统论。';
+        dragFeedback.className = 'feedback show correct';
+      } else {
+        dragFeedback.textContent = '❌ 匹配有误，再想想对应关系。提示：反馈属于控制论，信息熵属于信息论，整体性属于系统论。';
+        dragFeedback.className = 'feedback show incorrect';
+      }
+    });
+
+    resetBtn.addEventListener('click', resetDrag);
+
+    // allow items to be moved back to container? We'll keep it simple: reset only.
+    // also allow double-click to return? Not needed.
+  })();
+
+  // ----- Flashcard flip -----
+  function flipCard(card) {
+    const front = card.querySelector('.front-text');
+    const back = card.querySelector('.back-text');
+    if (card.dataset.side === 'front') {
+      front.style.display = 'none';
+      back.style.display = 'block';
+      card.dataset.side = 'back';
+      card.style.background = '#e8f0f8';
+      card.style.borderColor = '#2a7faa';
+    } else {
+      front.style.display = 'block';
+      back.style.display = 'none';
+      card.dataset.side = 'front';
+      card.style.background = '#fff';
+      card.style.borderColor = '#d4dfe9';
+    }
+  }
+</script>
+</body>
+</html>

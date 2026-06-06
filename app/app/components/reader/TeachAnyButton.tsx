@@ -19,7 +19,6 @@ interface Props {
  *
  * Gatekeeper (反幻觉守门员):
  * - 字数 < 1000 → disabled（内容过少无法提炼有效课件）
- * - 策略为 "速读" 或 "跳过" → disabled（非重点章节无需生成课件）
  *
  * 可用时发送 POST 请求到后端，拿到 URL 后 window.open 在新标签页打开。
  */
@@ -33,15 +32,12 @@ export default function TeachAnyButton({ bookName, chapterPath, chapterContent, 
 
   // ── Gatekeeper conditions ──
   const tooShort = wordCount < 1000;
-  const isSkipOrSkim = strategy === "速读" || strategy === "跳过";
-  const disabled = tooShort || isSkipOrSkim || loading;
+  const disabled = tooShort || loading;
 
   // ── Tooltip text ──
   let tooltip: string;
   if (tooShort) {
-    tooltip = "本节内容较少，已启动防幻觉保护，请在左侧目录点击【章】层级的按钮生成聚合课件";
-  } else if (isSkipOrSkim) {
-    tooltip = `当前策略为「${strategy}」，无需生成课件`;
+    tooltip = "本节内容较少（不足1000字），为防止 AI 幻觉，请在左侧目录点击【章】层级的按钮生成聚合课件";
   } else if (loading) {
     tooltip = "AI 正在为您设计教案，约需 30 秒…";
   } else {

@@ -90,7 +90,7 @@ export default function SettingsDialog({ open, onClose }: Props) {
         </div>
 
         <p className="text-xs text-neutral-400 mt-3 leading-relaxed">
-          Key 仅保存在浏览器本地，用于调用 DeepSeek API 进行解释、联想、费曼精读等功能。
+          Key 仅保存在浏览器本地，用于调用 DeepSeek API 进行解释、联想、AI 伴读等功能。
         </p>
       </div>
     </div>

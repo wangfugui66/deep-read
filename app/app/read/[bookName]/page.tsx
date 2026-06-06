@@ -144,8 +144,10 @@ export default function ReadPage() {
       const strategy = getChapterStrategy(currentPath ?? "");
       console.log("[handleChapterNavigate] strategy lookup:", { currentPath, strategy, hasSkeleton: !!skeletonTocRef.current });
 
-      // Not gated — navigate directly
-      if (!(!!skeletonTocRef.current && strategy === "精读")) {
+      // Not gated — navigate directly if NOT (intensive mode + 精读 strategy)
+      const currentMode = useReaderStore.getState().readingMode;
+      const shouldGate = !!(skeletonTocRef.current && strategy === "精读" && currentMode !== "immersive");
+      if (!shouldGate) {
         goToChapter(targetPath);
         return;
       }

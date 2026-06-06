@@ -26,7 +26,7 @@ interface Props {
 }
 
 export default function BottomNav({ chapters, currentPath, quizGenerating, skeletonToc, onNavigate }: Props) {
-  const { theme } = useReaderStore();
+  const { theme, readingMode } = useReaderStore();
   const sorted = [...chapters].sort((a, b) =>
     a.path.localeCompare(b.path, undefined, { numeric: true, sensitivity: "base" })
   );
@@ -59,8 +59,9 @@ export default function BottomNav({ chapters, currentPath, quizGenerating, skele
     return result;
   };
   const strategy = getStrategy();
-  // Gate: current chapter is "精读" → show quiz button regardless of readingMode
-  const isIntensive = !!skeletonToc && strategy === "精读";
+  // Gate: "精读" strategy AND NOT immersive mode → show quiz-style button
+  // In immersive mode, intensive chapters are treated as normal (no quiz gate)
+  const isIntensive = !!(skeletonToc && strategy === "精读" && readingMode !== "immersive");
 
   return (
     <div className={`flex items-center justify-center gap-12 px-4 py-6 !border-none !shadow-none sticky bottom-0 z-50 ${BOTTOM_BG[theme]} ${BOTTOM_TEXT[theme]}`}>

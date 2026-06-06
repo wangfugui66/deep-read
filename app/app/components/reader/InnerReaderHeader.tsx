@@ -147,12 +147,12 @@ export default function InnerReaderHeader({ bookName }: Props) {
             ? "border-neutral-200 bg-neutral-50 text-neutral-600 hover:bg-neutral-100"
             : "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100"
         }`}
-        title={readingMode === "immersive" ? "切换到 AI 精读" : "切换到沉浸式阅读"}
+        title={readingMode === "immersive" ? "切换到 AI 伴读" : "切换到沉浸式阅读"}
       >
         {readingMode === "immersive" ? (
           <><Bookmark size={13} /><span className="hidden sm:inline">沉浸式</span></>
         ) : (
-          <><Bot size={13} /><span className="hidden sm:inline">AI 精读</span></>
+          <><Bot size={13} /><span className="hidden sm:inline">AI 伴读</span></>
         )}
       </button>
 
