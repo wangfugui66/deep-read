@@ -70,7 +70,7 @@ DEEPSEEK_API_KEY=sk-your-key-here docker compose up
     ↓
 画像完成 → AI 生成四级阅读策略矩阵（Architect Agent）
     ↓
-目录叠加显示：精读🔴 / 速读🟡 / 选读🔵 / 跳过⚪
+阅读建议显示：精读🔴 
     ↓
 精读章节 → 关卡测验（≥80% 通过）
     ↓
