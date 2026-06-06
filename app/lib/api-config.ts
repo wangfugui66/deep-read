@@ -14,7 +14,8 @@ export const API_BASE_URL =
  *
  * Must point directly to the FastAPI server (default: http://localhost:8000).
  */
-export const BACKEND_STATIC_URL = "http://localhost:8000";
+export const BACKEND_STATIC_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 /**
  * Resolve a TeachAny view URL to the backend static origin.
