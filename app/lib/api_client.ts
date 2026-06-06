@@ -478,6 +478,21 @@ export async function appendChatMessage(
   );
 }
 
+/** Update the title of a chat session on the backend. */
+export async function updateSessionTitle(
+  bookName: string,
+  sessionId: string,
+  title: string
+): Promise<void> {
+  await _fetch(
+    `/api/chat/sessions/${encodeURIComponent(bookName)}/${encodeURIComponent(sessionId)}/title`,
+    {
+      method: "PUT",
+      body: JSON.stringify({ title }),
+    }
+  );
+}
+
 /** Generate a personalized dynamic TOC (four-level strategy matrix). */
 export async function generateSkeleton(
   bookName: string

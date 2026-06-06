@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { fetchChapters, fetchDynamicToc, fetchIndexingStatus, generateSkeleton, deleteProfile } from "@/lib/api_client";
 import { useReaderStore } from "@/lib/stores/readerStore";
-import type { ChapterRef, SkeletonTocData, SkeletonModule } from "@/lib/types";
+import type { ChapterRef, SkeletonTocData } from "@/lib/types";
 import { API_BASE_URL, resolveTeachAnyUrl } from "@/lib/api-config";
 
 // ====================================================================
@@ -97,6 +97,7 @@ export default function TocDrawer({ bookName, isOpen, onClose, onOpenWizard, ref
   const [skeletonGenerating, setSkeletonGenerating] = useState(false);
   const [skeletonError, setSkeletonError] = useState<string | null>(null);
   const [aggregateToast, setAggregateToast] = useState<string | null>(null);
+  const [aggregatingPath, setAggregatingPath] = useState<string | null>(null);
 
   const { currentChapterPath, setChapter, setWizardOpen, indexingStatus, setIndexingStatus, indexedCount, totalCount, setIndexingProgress, readingMode } = useReaderStore();
 
@@ -303,19 +304,26 @@ export default function TocDrawer({ bookName, isOpen, onClose, onOpenWizard, ref
     }
   };
 
-  // ── TeachAny aggregation handler ──
-  const handleAggregateModule = async (mod: SkeletonModule) => {
-    const chapterPaths = (mod?.chapters || []).map((ch) => ch?.file_path || "").filter(Boolean);
-    if (chapterPaths.length === 0) return;
+  // ── Recursive path collector ──
+  const collectAllPaths = (node: TocNode): string[] => {
+    const paths: string[] = [node.path];
+    for (const child of node.children) {
+      paths.push(...collectAllPaths(child));
+    }
+    return paths;
+  };
 
-    console.log("[TeachAny] 触发章层级聚合生成", {
-      bookName,
-      module_name: mod?.module_name || "",
-      chapterCount: chapterPaths.length,
-      chapterPaths,
-    });
+  // ── TeachAny aggregation handler — for native tree parent nodes ──
+  const handleAggregateNode = async (node: TocNode) => {
+    const chapterPaths = collectAllPaths(node).filter((p) => p && p.trim() !== "");
+    if (chapterPaths.length === 0) {
+      setAggregateToast("该章节下暂无有效正文内容");
+      setTimeout(() => setAggregateToast(null), 3000);
+      return;
+    }
 
-    setAggregateToast(`AI 正在聚合「${mod?.module_name || "未命名模块"}」(${chapterPaths.length}节) 生成大课件，约需 30 秒…`);
+    setAggregatingPath(node.path);
+    setAggregateToast(`AI 正在聚合「${node.displayTitle}」(${chapterPaths.length}节) 生成知识沙盘，约需 30 秒…`);
 
     try {
       const apiKey = typeof window !== "undefined" ? localStorage.getItem("dr-api-key") ?? "" : "";
@@ -338,16 +346,18 @@ export default function TocDrawer({ bookName, isOpen, onClose, onOpenWizard, ref
 
       const data = await res.json();
       if (data?.view_url) {
-        setAggregateToast("课件生成成功！正在新标签页打开…");
+        setAggregateToast("知识沙盘生成成功！正在新标签页打开…");
         setTimeout(() => setAggregateToast(null), 2000);
         window.open(resolveTeachAnyUrl(data.view_url), "_blank");
       } else {
-        throw new Error("后端未返回课件 URL");
+        throw new Error("后端未返回知识沙盘 URL");
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "未知错误";
       setAggregateToast(`生成失败: ${msg}`);
       setTimeout(() => setAggregateToast(null), 5000);
+    } finally {
+      setAggregatingPath(null);
     }
   };
 
@@ -496,38 +506,10 @@ export default function TocDrawer({ bookName, isOpen, onClose, onOpenWizard, ref
         )}
 
         <nav className="overflow-y-auto h-[calc(100vh-3rem)] py-2">
-          {/* ── Skeleton module overview — TeachAny aggregation entry points (hidden in immersive) ── */}
-          {!isImmersive && hasSkeleton && (tocData?.modules?.length || 0) > 0 && (
-            <div className="px-3 pb-2 mb-2 border-b border-neutral-100">
-              <div className="text-[10px] font-medium text-neutral-400 uppercase tracking-wide mb-1.5">
-                聚合课件
-              </div>
-              {(tocData?.modules || []).map((mod, idx) => {
-                const chCount = (mod?.chapters?.length || 0);
-                return (
-                  <div key={idx} className="flex items-center justify-between py-0.5 group">
-                    <span className="text-[11px] text-neutral-500 truncate flex-1 min-w-0 pr-1">
-                      {mod?.module_name || `模块 ${idx + 1}`}
-                      {chCount > 0 && <span className="text-neutral-350 ml-0.5">({chCount}节)</span>}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleAggregateModule(mod)}
-                      title={`聚合「${mod?.module_name || "模块"}」全部 ${chCount} 节生成宏观课件`}
-                      className="p-0.5 rounded text-neutral-350 hover:text-indigo-500 hover:bg-indigo-50 transition-colors shrink-0 opacity-0 group-hover:opacity-100"
-                    >
-                      <Layers size={12} />
-                    </button>
-                  </div>
-                );
-              })}
-
-              {/* Aggregation toast */}
-              {aggregateToast && (
-                <div className="mt-1.5 px-2 py-1 rounded bg-indigo-50 border border-indigo-100 text-[10px] text-indigo-600 animate-pulse">
-                  {aggregateToast}
-                </div>
-              )}
+          {/* ── TeachAny aggregation toast (sticky — always visible) ── */}
+          {aggregateToast && (
+            <div className="sticky bottom-2 z-10 mx-2 px-2.5 py-1.5 rounded bg-indigo-50 border border-indigo-100 text-[10px] text-indigo-600 shadow">
+              {aggregateToast}
             </div>
           )}
           {loadingChapters && (
@@ -551,6 +533,8 @@ export default function TocDrawer({ bookName, isOpen, onClose, onOpenWizard, ref
               strategyMap={strategyMap}
               readPaths={readPaths}
               isImmersive={isImmersive}
+              onAggregateNode={handleAggregateNode}
+              aggregatingPath={aggregatingPath}
             />
           )}
         </nav>
@@ -564,7 +548,7 @@ export default function TocDrawer({ bookName, isOpen, onClose, onOpenWizard, ref
 // ====================================================================
 
 function TreeNodeList({
-  nodes, currentPath, collapsed, indentMap, onSelect, onToggleCollapse, chapters, strategyMap, readPaths, isImmersive,
+  nodes, currentPath, collapsed, indentMap, onSelect, onToggleCollapse, chapters, strategyMap, readPaths, isImmersive, onAggregateNode, aggregatingPath,
 }: {
   nodes: TocNode[];
   currentPath: string | null;
@@ -576,6 +560,8 @@ function TreeNodeList({
   strategyMap: Map<string, StrategyInfo>;
   readPaths: Set<string>;
   isImmersive: boolean;
+  onAggregateNode: (node: TocNode) => void;
+  aggregatingPath: string | null;
 }) {
   return (
     <>
@@ -631,6 +617,23 @@ function TreeNodeList({
                 </span>
               </span>
 
+              {/* Aggregation button — parent nodes only, hidden in immersive */}
+              {!isImmersive && hasChildren && (
+                <span
+                  onClick={(e) => { e.stopPropagation(); onAggregateNode(node); }}
+                  className="shrink-0 p-0.5 rounded text-neutral-300 hover:text-indigo-500 hover:bg-indigo-50 transition-colors"
+                  title={aggregatingPath === node.path
+                    ? "知识沙盘生成中…"
+                    : `聚合「${node.displayTitle}」及子章节`}
+                >
+                  {aggregatingPath === node.path ? (
+                    <Loader2 size={11} className="animate-spin" />
+                  ) : (
+                    <Layers size={11} />
+                  )}
+                </span>
+              )}
+
               {/* Strategy badge — only 精读 gets visual emphasis, hidden in immersive mode */}
               {!isImmersive && isIntensive && !isRead && (
                 <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium border shrink-0 bg-red-50 border-red-200 text-red-600">
@@ -652,6 +655,8 @@ function TreeNodeList({
                 strategyMap={strategyMap}
                 readPaths={readPaths}
                 isImmersive={isImmersive}
+                onAggregateNode={onAggregateNode}
+                aggregatingPath={aggregatingPath}
               />
             )}
           </div>

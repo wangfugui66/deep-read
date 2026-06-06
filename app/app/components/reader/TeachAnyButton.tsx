@@ -15,10 +15,10 @@ interface Props {
 }
 
 /**
- * TeachAny 课件生成入口按钮（单节粒度）。
+ * TeachAny 知识沙盘生成入口按钮（单节粒度）。
  *
  * Gatekeeper (反幻觉守门员):
- * - 字数 < 1000 → disabled（内容过少无法提炼有效课件）
+ * - 字数 < 1000 → disabled（内容过少无法提炼有效知识沙盘）
  *
  * 可用时发送 POST 请求到后端，拿到 URL 后 window.open 在新标签页打开。
  */
@@ -37,11 +37,11 @@ export default function TeachAnyButton({ bookName, chapterPath, chapterContent, 
   // ── Tooltip text ──
   let tooltip: string;
   if (tooShort) {
-    tooltip = "本节内容较少（不足1000字），为防止 AI 幻觉，请在左侧目录点击【章】层级的按钮生成聚合课件";
+    tooltip = "本节内容较少（不足1000字），为防止 AI 幻觉，请在左侧目录点击【章】层级的按钮生成聚合知识沙盘";
   } else if (loading) {
     tooltip = "AI 正在为您设计教案，约需 30 秒…";
   } else {
-    tooltip = "提炼为互动微课件";
+    tooltip = "提炼为知识沙盘";
   }
 
   const showToast = (msg: string, durationMs = 3000) => {
@@ -75,10 +75,10 @@ export default function TeachAnyButton({ bookName, chapterPath, chapterContent, 
 
       const data = await res.json();
       if (data?.view_url) {
-        showToast("课件生成成功！正在新标签页打开…", 2000);
+        showToast("知识沙盘生成成功！正在新标签页打开…", 2000);
         window.open(resolveTeachAnyUrl(data.view_url), "_blank");
       } else {
-        throw new Error("后端未返回课件 URL");
+        throw new Error("后端未返回知识沙盘 URL");
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "未知错误";
@@ -106,7 +106,7 @@ export default function TeachAnyButton({ bookName, chapterPath, chapterContent, 
         ) : (
           <GraduationCap size={14} />
         )}
-        <span>{loading ? "生成中…" : "生成课件"}</span>
+        <span>{loading ? "生成中…" : "知识沙盘"}</span>
       </button>
 
       {/* Toast */}
