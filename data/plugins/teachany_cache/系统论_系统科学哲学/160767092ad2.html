@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>中国传统系统思想 · 互动课件</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #f6f3ef; font-family: 'Segoe UI', 'Noto Sans SC', system-ui, sans-serif; color: #2c3e4f; line-height: 1.6; padding: 2rem 1.5rem; display: flex; justify-content: center; }
+  .container { max-width: 900px; width: 100%; }
+  h1 { font-size: 2.2rem; font-weight: 600; letter-spacing: -0.02em; color: #1e3a4d; margin-bottom: 0.25rem; border-left: 6px solid #b5653b; padding-left: 1rem; }
+  .subtitle { font-size: 1.1rem; color: #5f6d7a; margin-bottom: 2rem; font-style: italic; }
+  .hook { background: #e7e0d3; padding: 1.6rem 2rem; border-radius: 20px; margin-bottom: 2.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
+  .hook strong { color: #b5653b; }
+  .section-title { font-size: 1.5rem; font-weight: 600; margin: 2rem 0 1rem; color: #1e3a4d; border-bottom: 2px solid #d6cdbc; padding-bottom: 0.3rem; display: flex; align-items: center; gap: 0.5rem; }
+  .section-title span { background: #b5653b; color: #fff; font-size: 0.9rem; border-radius: 40px; padding: 0.1rem 0.8rem; }
+  .concept-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.2rem; margin: 1.5rem 0; }
+  .concept-card { background: #fff; padding: 1.2rem 1.2rem 1.2rem 1.2rem; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #e3dbcf; }
+  .concept-card h3 { color: #1e3a4d; font-size: 1.1rem; margin-bottom: 0.4rem; }
+  .concept-card p { font-size: 0.95rem; color: #3d4e5c; }
+  .interactive-box { background: #fff; border-radius: 24px; padding: 1.8rem 2rem; margin: 2rem 0; box-shadow: 0 6px 20px rgba(0,0,0,0.05); border: 1px solid #e7dfd3; }
+  .interactive-box h2 { font-size: 1.3rem; margin-bottom: 1rem; color: #1e3a4d; display: flex; align-items: center; gap: 0.5rem; }
+  .interactive-box h2 small { font-weight: 400; font-size: 0.85rem; color: #7a8a99; }
+  .btn { background: #b5653b; color: #fff; border: none; padding: 0.6rem 1.6rem; border-radius: 40px; font-size: 0.95rem; cursor: pointer; transition: 0.2s; font-weight: 500; letter-spacing: 0.02em; }
+  .btn:hover { background: #9b4f2c; transform: scale(1.02); }
+  .btn.secondary { background: #d6cdbc; color: #2c3e4f; }
+  .btn.secondary:hover { background: #c2b7a3; }
+  .feedback { margin-top: 1rem; padding: 0.8rem 1.2rem; border-radius: 40px; font-weight: 500; display: inline-block; }
+  .feedback.correct { background: #d4e9d6; color: #1e5a2b; }
+  .feedback.wrong { background: #f7d7d4; color: #a13d32; }
+  .feedback.neutral { background: #eae5db; color: #3d4e5c; }
+  .drag-zone { background: #f3efe8; border: 2px dashed #c7bbaa; border-radius: 30px; padding: 1.2rem; min-height: 70px; display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; justify-content: center; margin: 1rem 0; }
+  .drag-item { background: #fff; border: 1px solid #c7bbaa; border-radius: 40px; padding: 0.4rem 1.2rem; cursor: grab; user-select: none; transition: 0.1s; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
+  .drag-item:active { cursor: grabbing; opacity: 0.7; }
+  .drag-item.dropped { background: #d4e9d6; border-color: #6a9e77; }
+  .drop-zone { background: #f3efe8; border: 2px dashed #b5653b; border-radius: 30px; padding: 1.2rem; min-height: 70px; display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; justify-content: center; margin: 1rem 0; transition: 0.2s; }
+  .drop-zone.drag-over { background: #e7dccb; border-color: #9b4f2c; }
+  .quiz-option { display: block; background: #f3efe8; border: 1px solid #d6cdbc; border-radius: 40px; padding: 0.6rem 1.4rem; margin: 0.5rem 0; cursor: pointer; transition: 0.15s; }
+  .quiz-option:hover { background: #e7dfd3; }
+  .quiz-option.selected { background: #b5653b; color: #fff; border-color: #b5653b; }
+  .quiz-option.correct-answer { background: #6a9e77; color: #fff; border-color: #6a9e77; }
+  .quiz-option.wrong-answer { background: #c75a4a; color: #fff; border-color: #c75a4a; }
+  .summary-box { background: #e7e0d3; border-radius: 20px; padding: 1.6rem 2rem; margin-top: 2rem; }
+  .summary-box h3 { color: #1e3a4d; }
+  .next-steps { background: #fff; border-radius: 20px; padding: 1.4rem 2rem; margin: 2rem 0; border: 1px solid #e3dbcf; }
+  .next-steps ul { padding-left: 1.2rem; }
+  .next-steps li { margin: 0.3rem 0; }
+  hr { border: none; border-top: 1px solid #d6cdbc; margin: 1.8rem 0; }
+  .flex { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
+  .status { font-size: 0.9rem; color: #5f6d7a; }
+  @media (max-width: 600px) { body { padding: 1rem; } .interactive-box { padding: 1.2rem; } }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🌿 中国传统系统思想</h1>
+<div class="subtitle">阴阳 · 五行 · 道 · 理 · 兵法 · 工程</div>
+
+<div class="hook">
+  <strong>📖 故事·钩子</strong><br>
+  古人仰望星空，发现万物并非孤立 —— <strong>And</strong> 他们从阴阳、五行、八卦中看到了整体关联；<strong>But</strong> 世界如此复杂，如何用简单模型把握变化？<strong>Therefore</strong> 先贤创造了《周易》、道家、中医、理学、兵法乃至都江堰工程——一套套系统思想，至今仍是智慧源泉。
+</div>
+
+<div class="section-title"><span>🧠</span> 核心概念</div>
+<div class="concept-grid">
+  <div class="concept-card"><h3>☯ 阴阳八卦 · 《周易》</h3><p>以阴阳为核心，视世界为整体、矛盾关系与动态循环的系统，影响中国思想与全球文化。</p></div>
+  <div class="concept-card"><h3>🔄 阴阳五行 · 《黄帝内经》</h3><p>人体与自然和谐，通过阴阳平衡和五行生克解释生理病理，形成中医整体系统思想。</p></div>
+  <div class="concept-card"><h3>🌌 道家 · 道法自然</h3><p>老子以道为万物本原，具形上、实存、运动性；庄子强调道为规律，影响现代自组织思想。</p></div>
+  <div class="concept-card"><h3>📐 宋明理学 · 太极与象数</h3><p>周敦颐太极图、邵雍象数哲学，构建天地人系统模式，融合佛道再创造。</p></div>
+  <div class="concept-card"><h3>⚔️ 《孙子兵法》系统思想</h3><p>全面战略高度分析战争，注重战略与战术结合，动态运筹、信息控制、知己知彼。</p></div>
+  <div class="concept-card"><h3>🏗️ 都江堰 · 群炉汇铸</h3><p>鱼嘴、飞沙堰、宝瓶口实现自动分流排沙灌溉；明代万钧大钟群炉汇铸工艺，古代系统工程典范。</p></div>
+</div>
+
+<!-- 互动1：拖拽匹配 —— 将思想流派与核心描述配对 (drag & drop) -->
+<div class="interactive-box">
+  <h2>🧩 互动一 · 拖拽配对 <small>把概念拖到对应的描述框</small></h2>
+  <p style="margin-bottom:0.5rem;color:#3d4e5c;">从下方拖拽概念到右侧描述区域（点击重置可重新开始）</p>
+  <div style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:flex-start;">
+    <div style="flex:1; min-width:180px;">
+      <div style="font-weight:600; margin-bottom:0.3rem;">📦 概念卡片</div>
+      <div class="drag-zone" id="dragSource">
+        <div class="drag-item" draggable="true" data-concept="yin-yang">阴阳八卦</div>
+        <div class="drag-item" draggable="true" data-concept="wuxing">阴阳五行</div>
+        <div class="drag-item" draggable="true" data-concept="dao">道家</div>
+        <div class="drag-item" draggable="true" data-concept="lixue">宋明理学</div>
+        <div class="drag-item" draggable="true" data-concept="sunzi">孙子兵法</div>
+        <div class="drag-item" draggable="true" data-concept="dujiang">都江堰</div>
+      </div>
+    </div>
+    <div style="flex:2; min-width:220px;">
+      <div style="font-weight:600; margin-bottom:0.3rem;">🎯 描述区域（拖入对应概念）</div>
+      <div class="drop-zone" id="dropZone1" data-expected="yin-yang">整体、矛盾关系与动态循环</div>
+      <div class="drop-zone" id="dropZone2" data-expected="wuxing">人体与自然和谐，生克平衡</div>
+      <div class="drop-zone" id="dropZone3" data-expected="dao">道为万物本原，形上实存运动</div>
+      <div class="drop-zone" id="dropZone4" data-expected="lixue">太极图与象数，天地人模式</div>
+      <div class="drop-zone" id="dropZone5" data-expected="sunzi">战略战术结合，动态运筹</div>
+      <div class="drop-zone" id="dropZone6" data-expected="dujiang">自动分流排沙，系统水利工程</div>
+    </div>
+  </div>
+  <div class="flex" style="margin-top:1rem;">
+    <button class="btn secondary" id="resetDragBtn">🔄 重置</button>
+    <span id="dragStatus" class="status">已匹配 0 / 6</span>
+  </div>
+  <div id="dragFeedback" class="feedback neutral" style="margin-top:0.5rem;">拖拽概念卡片到对应描述框</div>
+</div>
+
+<!-- 互动2：选择题 —— 检验理解 -->
+<div class="interactive-box">
+  <h2>📝 互动二 · 概念检测</h2>
+  <p style="margin-bottom:0.8rem;"><strong>《孙子兵法》系统思想的核心是？</strong></p>
+  <div id="quizOptions">
+    <div class="quiz-option" data-answer="wrong">只强调战术细节</div>
+    <div class="quiz-option" data-answer="correct">从全面战略高度分析战争，战略与战术结合，动态运筹</div>
+    <div class="quiz-option" data-answer="wrong">依赖占卜预测胜负</div>
+    <div class="quiz-option" data-answer="wrong">忽视信息与知己知彼</div>
+  </div>
+  <div class="flex" style="margin-top:0.8rem;">
+    <button class="btn" id="quizSubmit">✓ 提交答案</button>
+    <span id="quizStatus" class="status">选择一个选项</span>
+  </div>
+  <div id="quizFeedback" class="feedback neutral" style="margin-top:0.5rem;">点击选项再提交</div>
+</div>
+
+<!-- 互动3：排序题 —— 都江堰组成部分排序 -->
+<div class="interactive-box">
+  <h2>🔀 互动三 · 排序挑战 <small>都江堰三大组成部分（由上游至下游）</small></h2>
+  <p style="color:#3d4e5c;">拖拽调整顺序，然后点击验证。正确顺序：鱼嘴 → 飞沙堰 → 宝瓶口</p>
+  <div id="sortContainer" style="display:flex; flex-direction:column; gap:0.6rem; margin:1rem 0;">
+    <div class="drag-item" draggable="true" style="cursor:grab; text-align:center; background:#f3efe8; border:1px solid #c7bbaa; border-radius:40px; padding:0.5rem 1.2rem;" data-part="1">飞沙堰</div>
+    <div class="drag-item" draggable="true" style="cursor:grab; text-align:center; background:#f3efe8; border:1px solid #c7bbaa; border-radius:40px; padding:0.5rem 1.2rem;" data-part="2">宝瓶口</div>
+    <div class="drag-item" draggable="true" style="cursor:grab; text-align:center; background:#f3efe8; border:1px solid #c7bbaa; border-radius:40px; padding:0.5rem 1.2rem;" data-part="3">鱼嘴</div>
+  </div>
+  <div class="flex">
+    <button class="btn" id="sortCheckBtn">✓ 验证顺序</button>
+    <button class="btn secondary" id="sortResetBtn">🔄 重置顺序</button>
+    <span id="sortStatus" class="status">顺序打乱中</span>
+  </div>
+  <div id="sortFeedback" class="feedback neutral" style="margin-top:0.5rem;"></div>
+</div>
+
+<div class="summary-box">
+  <h3>📌 总结</h3>
+  <p>中国传统系统思想从《周易》阴阳八卦、阴阳五行、《黄帝内经》、道家、宋明理学到《孙子兵法》与都江堰工程，一脉相承地强调整体关联、动态平衡、自组织与和谐。这些古老智慧不仅是历史瑰宝，更为现代系统科学提供了灵感源泉。</p>
+</div>
+
+<div class="next-steps">
+  <h3>🚀 下一步探索</h3>
+  <ul>
+    <li>阅读《周易》原典中的卦象与系辞</li>
+    <li>了解中医五行生克在养生中的实际应用</li>
+    <li>比较道家“道法自然”与现代自组织理论</li>
+    <li>研究都江堰鱼嘴分水比的流体力学原理</li>
+  </ul>
+</div>
+
+</div>
+
+<script>
+(function() {
+  // ---------- 互动一：拖拽匹配 ----------
+  const dragItems = document.querySelectorAll('.drag-item');
+  const dropZones = document.querySelectorAll('.drop-zone');
+  const dragStatus = document.getElementById('dragStatus');
+  const dragFeedback = document.getElementById('dragFeedback');
+  const resetDragBtn = document.getElementById('resetDragBtn');
+
+  let matchCount = 0;
+  function updateDragStatus() {
+    const matched = document.querySelectorAll('.drop-zone .drag-item').length;
+    matchCount = matched;
+    dragStatus.textContent = `已匹配 ${matchCount} / 6`;
+    if (matchCount === 6) {
+      dragFeedback.className = 'feedback correct';
+      dragFeedback.textContent = '🎉 完美！所有概念配对正确！';
+    } else {
+      dragFeedback.className = 'feedback neutral';
+      dragFeedback.textContent = `继续拖拽配对，已完成 ${matchCount} 个。`;
+    }
+  }
+
+  // 拖拽事件
+  dragItems.forEach(item => {
+    item.addEventListener('dragstart', function(e) {
+      e.dataTransfer.setData('text/plain', this.dataset.concept);
+      e.dataTransfer.effectAllowed = 'move';
+    });
+  });
+
+  dropZones.forEach(zone => {
+    zone.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      this.classList.add('drag-over');
+    });
+    zone.addEventListener('dragleave', function() {
+      this.classList.remove('drag-over');
+    });
+    zone.addEventListener('drop', function(e) {
+      e.preventDefault();
+      this.classList.remove('drag-over');
+      const concept = e.dataTransfer.getData('text/plain');
+      // 如果该区域已有子元素，不允许重复放置
+      if (this.children.length > 0) {
+        dragFeedback.className = 'feedback wrong';
+        dragFeedback.textContent = '该描述区域已有一个概念，请先重置或拖到其他区域。';
+        return;
+      }
+      // 检查是否匹配
+      const expected = this.dataset.expected;
+      if (concept === expected) {
+        // 创建新元素显示
+        const newItem = document.createElement('div');
+        newItem.className = 'drag-item dropped';
+        newItem.textContent = this.previousElementSibling ? '✓ ' : ''; // 美化
+        // 找到原卡片文字
+        const original = document.querySelector(`.drag-item[data-concept="${concept}"]`);
+        newItem.textContent = original ? original.textContent : concept;
+        newItem.draggable = false;
+        this.appendChild(newItem);
+        // 隐藏原卡片
+        if (original) original.style.display = 'none';
+        updateDragStatus();
+      } else {
+        dragFeedback.className = 'feedback wrong';
+        dragFeedback.textContent = `❌ 配对错误：“${concept}” 不匹配这个描述。再试试！`;
+      }
+    });
+  });
+
+  resetDragBtn.addEventListener('click', function() {
+    // 恢复所有drag-item显示
+    document.querySelectorAll('.drag-item').forEach(item => {
+      item.style.display = '';
+      item.classList.remove('dropped');
+    });
+    // 清空drop-zone
+    dropZones.forEach(zone => {
+      zone.innerHTML = zone.dataset.expected ? '' : '';
+      // 重新填充描述文本
+      const descriptions = {
+        'dropZone1': '整体、矛盾关系与动态循环',
+        'dropZone2': '人体与自然和谐，生克平衡',
+        'dropZone3': '道为万物本原，形上实存运动',
+        'dropZone4': '太极图与象数，天地人模式',
+        'dropZone5': '战略战术结合，动态运筹',
+        'dropZone6': '自动分流排沙，系统水利工程'
+      };
+      if (descriptions[zone.id]) {
+        zone.textContent = descriptions[zone.id];
+      }
+    });
+    matchCount = 0;
+    updateDragStatus();
+    dragFeedback.className = 'feedback neutral';
+    dragFeedback.textContent = '已重置，重新拖拽配对。';
+  });
+
+  // ---------- 互动二：选择题 ----------
+  const quizOptions = document.querySelectorAll('#quizOptions .quiz-option');
+  const quizSubmit = document.getElementById('quizSubmit');
+  const quizStatus = document.getElementById('quizStatus');
+  const quizFeedback = document.getElementById('quizFeedback');
+  let selectedOption = null;
+
+  quizOptions.forEach(opt => {
+    opt.addEventListener('click', function() {
+      quizOptions.forEach(o => o.classList.remove('selected'));
+      this.classList.add('selected');
+      selectedOption = this;
+      quizStatus.textContent = '已选择一项，点击提交';
+      quizFeedback.className = 'feedback neutral';
+      quizFeedback.textContent = '';
+    });
+  });
+
+  quizSubmit.addEventListener('click', function() {
+    if (!selectedOption) {
+      quizFeedback.className = 'feedback wrong';
+      quizFeedback.textContent = '请先选择一个选项。';
+      return;
+    }
+    const isCorrect = selectedOption.dataset.answer === 'correct';
+    // 显示正确/错误样式
+    quizOptions.forEach(o => {
+      if (o.dataset.answer === 'correct') o.classList.add('correct-answer');
+      if (o === selectedOption && !isCorrect) o.classList.add('wrong-answer');
+    });
+    if (isCorrect) {
+      quizFeedback.className = 'feedback correct';
+      quizFeedback.textContent = '✅ 正确！《孙子兵法》强调全面战略、战略战术结合与动态运筹。';
+      quizStatus.textContent = '🎉 回答正确！';
+    } else {
+      quizFeedback.className = 'feedback wrong';
+      quizFeedback.textContent = '❌ 再想想。《孙子兵法》的核心是从全面战略高度分析战争，注重战略与战术结合，动态运筹及知己知彼。';
+      quizStatus.textContent = '再试一次';
+    }
+  });
+
+  // ---------- 互动三：排序 ----------
+  const sortContainer = document.getElementById('sortContainer');
+  const sortCheckBtn = document.getElementById('sortCheckBtn');
+  const sortResetBtn = document.getElementById('sortResetBtn');
+  const sortStatus = document.getElementById('sortStatus');
+  const sortFeedback = document.getElementById('sortFeedback');
+
+  function getSortOrder() {
+    const items = sortContainer.querySelectorAll('.drag-item');
+    return Array.from(items).map(item => item.dataset.part);
+  }
+
+  function updateSortStatus() {
+    const order = getSortOrder();
+    sortStatus.textContent = `当前顺序：${order.join(' → ')}`;
+  }
+
+  // 使sortContainer内的项目可拖拽排序
+  sortContainer.addEventListener('dragstart', function(e) {
+    const target = e.target.closest('.drag-item');
+    if (!target) return;
+    e.dataTransfer.setData('text/plain', target.dataset.part);
+    e.dataTransfer.effectAllowed = 'move';
+    target.style.opacity = '0.5';
+  });
+  sortContainer.addEventListener('dragend', function(e) {
+    const target = e.target.closest('.drag-item');
+    if (target) target.style.opacity = '1';
+  });
+  sortContainer.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    const target = e.target.closest('.drag-item');
+    if (!target) return;
+    const draggingPart = e.dataTransfer.getData('text/plain');
+    if (!draggingPart) return;
+    const draggingItem = sortContainer.querySelector(`.drag-item[data-part="${draggingPart}"]`);
+    if (!draggingItem || draggingItem === target) return;
+    // 交换位置
+    const parent = sortContainer;
+    const children = Array.from(parent.children);
+    const idxTarget = children.indexOf(target);
+    const idxDrag = children.indexOf(draggingItem);
+    if (idxDrag < idxTarget) {
+      parent.insertBefore(draggingItem, target.nextSibling);
+    } else {
+      parent.insertBefore(draggingItem, target);
+    }
+    updateSortStatus();
+    sortFeedback.className = 'feedback neutral';
+    sortFeedback.textContent = '顺序已调整，点击验证。';
+  });
+
+  sortCheckBtn.addEventListener('click', function() {
+    const order = getSortOrder();
+    const correct = ['3', '1', '2']; // 鱼嘴(3) → 飞沙堰(1) → 宝瓶口(2)
+    if (order.length === 3 && order[0] === correct[0] && order[1] === correct[1] && order[2] === correct[2]) {
+      sortFeedback.className = 'feedback correct';
+      sortFeedback.textContent = '✅ 完全正确！鱼嘴 → 飞沙堰 → 宝瓶口，实现了自动分流、排沙和灌溉。';
+    } else {
+      sortFeedback.className = 'feedback wrong';
+      sortFeedback.textContent = '❌ 顺序不对。提示：鱼嘴在最上游，飞沙堰居中，宝瓶口为进水口。';
+    }
+  });
+
+  sortResetBtn.addEventListener('click', function() {
+    // 重置为初始乱序: 飞沙堰(1), 宝瓶口(2), 鱼嘴(3)
+    const items = sortContainer.querySelectorAll('.drag-item');
+    const parent = sortContainer;
+    // 按照 data-part 1,2,3 重新排列 (故意乱序)
+    const orderMap = { '1': '飞沙堰', '2': '宝瓶口', '3': '鱼嘴' };
+    // 清空并重新添加
+    parent.innerHTML = '';
+    // 按 1,2,3 添加但打乱：飞沙堰,宝瓶口,鱼嘴
+    const parts = ['1','2','3'];
+    parts.forEach(p => {
+      const div = document.createElement('div');
+      div.className = 'drag-item';
+      div.draggable = true;
+      div.style.cssText = 'cursor:grab; text-align:center; background:#f3efe8; border:1px solid #c7bbaa; border-radius:40px; padding:0.5rem 1.2rem;';
+      div.dataset.part = p;
+      div.textContent = orderMap[p];
+      parent.appendChild(div);
+    });
+    updateSortStatus();
+    sortFeedback.className = 'feedback neutral';
+    sortFeedback.textContent = '顺序已重置，请重新排序。';
+  });
+
+  // 初始化排序状态
+  updateSortStatus();
+  updateDragStatus();
+
+  // 为排序项增加拖拽事件 (重新绑定)
+  // 由于排序动态创建，使用事件委托已经处理
+
+})();
+</script>
+</body>
+</html>

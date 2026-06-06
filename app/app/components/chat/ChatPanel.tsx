@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { X, Send, Plus, History, Trash2 } from "lucide-react";
-import { streamSocraticChat, listChatSessions, readChatSession, createChatSession, deleteChatSession, appendChatMessage } from "@/lib/api_client";
+import { streamSocraticChat, listChatSessions, readChatSession, createChatSession, deleteChatSession, appendChatMessage, updateSessionTitle } from "@/lib/api_client";
 import { useChatStore } from "@/lib/stores/chatStore";
 import { useReaderStore } from "@/lib/stores/readerStore";
 import type { ChatMessage, ChatSessionMeta } from "@/lib/stores/chatStore";
@@ -130,6 +130,15 @@ export default function ChatPanel({ bookName }: Props) {
 
       addMessage(userMsg);
       addMessage(assistantMsg);
+
+      // Persist auto-title to backend immediately on first message
+      const newTitle = useChatStore.getState().sessions.find(
+        (s) => s.session_id === sid
+      )?.title;
+      if (newTitle && newTitle !== "新对话") {
+        updateSessionTitle(bookName, sid, newTitle).catch(() => {});
+      }
+
       setLoading(true);
 
       // Persist user message
@@ -165,7 +174,7 @@ export default function ChatPanel({ bookName }: Props) {
         setLoading(false);
         if (fullResponse) persistMsg("assistant", fullResponse);
 
-        // Refresh sessions list to show updated title
+        // Refresh sessions — backend already has updated title from PUT above
         listChatSessions(bookName).then(setSessions).catch(() => {});
       }
     },

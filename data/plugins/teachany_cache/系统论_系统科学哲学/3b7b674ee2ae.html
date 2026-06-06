@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>《孙子兵法》的系统思想</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', 'PingFang SC', Roboto, 'Helvetica Neue', sans-serif;
+    background: #f7f5f0;
+    color: #2c3e50;
+    line-height: 1.7;
+    padding: 2rem 1rem;
+  }
+  .container {
+    max-width: 880px;
+    margin: 0 auto;
+    background: #ffffff;
+    border-radius: 28px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.06);
+    padding: 2.2rem 2rem 3rem;
+  }
+  h1 {
+    font-size: 2.2rem;
+    font-weight: 600;
+    color: #1e3c4f;
+    letter-spacing: 1px;
+    margin-bottom: 0.25rem;
+    border-left: 6px solid #b5653b;
+    padding-left: 1rem;
+  }
+  .subhead {
+    color: #6a7c8b;
+    font-size: 1rem;
+    margin-bottom: 1.8rem;
+    padding-left: 1.6rem;
+    border-bottom: 1px solid #eae6df;
+    padding-bottom: 0.8rem;
+  }
+  .hook {
+    background: #f1ede6;
+    border-radius: 18px;
+    padding: 1.6rem 2rem;
+    margin-bottom: 2rem;
+    font-size: 1.05rem;
+    color: #2b3e4d;
+    box-shadow: inset 0 1px 4px rgba(0,0,0,0.02);
+  }
+  .hook strong { color: #b5653b; }
+  .hook .but { color: #a0402e; font-weight: 600; }
+  .hook .therefore { color: #1e6b5e; font-weight: 600; }
+  .section-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #1e3c4f;
+    margin: 2rem 0 1rem 0;
+    padding-bottom: 0.3rem;
+    border-bottom: 2px solid #d9cdbc;
+  }
+  .concept-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.2rem;
+    margin: 1.2rem 0 1.8rem;
+  }
+  .concept-card {
+    flex: 1 1 180px;
+    background: #faf8f4;
+    border-radius: 16px;
+    padding: 1.2rem 1rem;
+    border: 1px solid #e6dfd6;
+    transition: all 0.15s;
+  }
+  .concept-card:hover { background: #f4efe8; border-color: #cbb8a5; }
+  .concept-card h3 { font-size: 1.1rem; color: #b5653b; margin-bottom: 0.4rem; }
+  .concept-card p { font-size: 0.95rem; color: #3d4f5c; }
+
+  .interactive-area {
+    background: #faf8f4;
+    border-radius: 20px;
+    padding: 1.6rem 1.8rem;
+    margin: 2rem 0;
+    border: 1px solid #e2d9ce;
+  }
+  .interactive-area h2 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #1e3c4f;
+    margin-bottom: 1rem;
+  }
+  .quiz-question {
+    font-weight: 500;
+    margin-bottom: 0.8rem;
+  }
+  .quiz-options { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.8rem; }
+  .quiz-options label {
+    display: flex; align-items: center; gap: 0.6rem;
+    background: white;
+    padding: 0.5rem 1rem;
+    border-radius: 30px;
+    border: 1px solid #d9cdbc;
+    cursor: pointer;
+    transition: 0.1s;
+  }
+  .quiz-options label:hover { background: #efe9e1; }
+  .quiz-options input { accent-color: #b5653b; }
+  .quiz-feedback {
+    padding: 0.6rem 1rem;
+    border-radius: 30px;
+    font-weight: 500;
+    display: inline-block;
+    margin-top: 0.2rem;
+  }
+  .correct-fb { background: #d4edda; color: #155724; }
+  .wrong-fb { background: #f8d7da; color: #721c24; }
+  .btn {
+    background: #b5653b;
+    color: white;
+    border: none;
+    padding: 0.5rem 1.6rem;
+    border-radius: 40px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: 0.15s;
+    margin-top: 0.5rem;
+    display: inline-block;
+  }
+  .btn:hover { background: #9c4f2c; transform: scale(0.97); }
+  .btn-secondary {
+    background: #d9cdbc;
+    color: #2c3e50;
+  }
+  .btn-secondary:hover { background: #cbb8a5; }
+
+  .drag-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0.8rem 0 1rem;
+  }
+  .drag-item {
+    background: white;
+    border: 1px solid #cbb8a5;
+    border-radius: 40px;
+    padding: 0.5rem 1.2rem;
+    cursor: grab;
+    user-select: none;
+    font-weight: 500;
+    transition: 0.1s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  }
+  .drag-item.dragging { opacity: 0.5; }
+  .drop-zone {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    min-height: 3.2rem;
+    background: #f1ede6;
+    border-radius: 40px;
+    padding: 0.8rem 1rem;
+    border: 2px dashed #b5653b;
+    margin: 0.5rem 0 0.8rem;
+    align-items: center;
+  }
+  .drop-zone .drag-item {
+    cursor: default;
+    background: #e9dfd3;
+    border-color: #b5653b;
+  }
+  .drop-zone-label {
+    font-weight: 500;
+    color: #4d3e2e;
+    margin-right: 0.5rem;
+  }
+  .sort-feedback { margin-top: 0.4rem; }
+
+  .flashcard-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 1.2rem 0;
+  }
+  .flashcard {
+    background: white;
+    border-radius: 24px;
+    padding: 2rem 1.8rem;
+    min-height: 140px;
+    width: 100%;
+    max-width: 480px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+    border: 1px solid #d9cdbc;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .flashcard:hover { border-color: #b5653b; }
+  .flashcard .back { display: none; }
+  .flashcard.show-back .front { display: none; }
+  .flashcard.show-back .back { display: block; }
+  .flashcard-controls { margin-top: 0.8rem; display: flex; gap: 0.8rem; flex-wrap: wrap; justify-content: center; }
+
+  .summary-box {
+    background: #e8e2d9;
+    border-radius: 20px;
+    padding: 1.5rem 2rem;
+    margin: 2rem 0 1rem;
+  }
+  .summary-box h3 { color: #1e3c4f; margin-bottom: 0.5rem; }
+  .next-steps {
+    background: #d9cdbc;
+    border-radius: 20px;
+    padding: 1rem 1.8rem;
+    color: #1e3c4f;
+    font-weight: 500;
+    margin-top: 1.2rem;
+  }
+  hr { border: none; border-top: 1px solid #e2d9ce; margin: 1.6rem 0; }
+  @media (max-width: 600px) {
+    .container { padding: 1.5rem 1rem; }
+    h1 { font-size: 1.8rem; }
+    .concept-card { flex: 1 1 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>《孙子兵法》的系统思想</h1>
+  <div class="subhead">标签：孙子兵法 · 系统思想 · 战略战术</div>
+
+  <!-- ABT Hook -->
+  <div class="hook">
+    <strong>And</strong> —— 战争是复杂多变的对抗，<strong>《孙子兵法》</strong>从全面战略高度系统分析战争，注重战略与战术的紧密结合。<br>
+    <span class="but">But</span> —— 仅仅知道原则还不够，战场形势瞬息万变，若不能动态运筹、有效控制信息，就会陷入被动。<br>
+    <span class="therefore">Therefore</span> —— 孙子强调“知己知彼，百战不殆”，通过信息控制与动态调整，始终掌握主动权。
+  </div>
+
+  <!-- Key Concepts -->
+  <div class="section-title">📖 核心概念</div>
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h3>⚔️ 战略与战术结合</h3>
+      <p>从全局高度谋划，同时注重每一场战斗的战术执行，二者不可偏废。</p>
+    </div>
+    <div class="concept-card">
+      <h3>🔄 动态运筹</h3>
+      <p>根据敌我形势、地形、天候等因素灵活调整计划，因敌制胜。</p>
+    </div>
+    <div class="concept-card">
+      <h3>📡 信息控制</h3>
+      <p>掌握关键情报，同时隐藏自身意图，做到“形人而我无形”。</p>
+    </div>
+    <div class="concept-card">
+      <h3>🧠 知己知彼</h3>
+      <p>全面了解己方能力与敌方弱点，是制定正确战略的基础。</p>
+    </div>
+  </div>
+
+  <!-- Interactive 1: Quiz (概念检测) -->
+  <div class="interactive-area" id="quiz1">
+    <h2>✏️ 概念检测</h2>
+    <p class="quiz-question">根据摘要，《孙子兵法》的系统思想强调以下哪一项？</p>
+    <div class="quiz-options">
+      <label><input type="radio" name="q1" value="A"> 只关注战术细节，忽略全局</label>
+      <label><input type="radio" name="q1" value="B"> 战略与战术结合，动态运筹与信息控制</label>
+      <label><input type="radio" name="q1" value="C"> 依靠人数优势取胜，不重视情报</label>
+      <label><input type="radio" name="q1" value="D"> 固定不变的作战计划</label>
+    </div>
+    <button class="btn" id="checkQuiz1">检查答案</button>
+    <div id="quiz1Feedback" class="quiz-feedback" style="margin-top:0.6rem;"></div>
+  </div>
+
+  <!-- Interactive 2: Drag & Drop 排序 (系统思想要素) -->
+  <div class="interactive-area" id="dragSort">
+    <h2>🧩 系统思想排序</h2>
+    <p style="margin-bottom:0.5rem;">将下列要素按《孙子兵法》系统思想的逻辑顺序排列（拖拽到下方区域）：</p>
+    <div class="drag-container" id="dragSource">
+      <div class="drag-item" draggable="true" data-id="3">知己知彼</div>
+      <div class="drag-item" draggable="true" data-id="1">战略全局分析</div>
+      <div class="drag-item" draggable="true" data-id="4">动态运筹调整</div>
+      <div class="drag-item" draggable="true" data-id="2">战术执行</div>
+      <div class="drag-item" draggable="true" data-id="5">信息控制</div>
+    </div>
+    <div style="font-weight:500; margin-top:0.8rem;">👇 拖到此处排序（从左到右，从先到后）</div>
+    <div class="drop-zone" id="dropZone"></div>
+    <button class="btn btn-secondary" id="resetSort" style="margin-right:0.6rem;">重置</button>
+    <button class="btn" id="checkSort">验证顺序</button>
+    <div id="sortFeedback" class="sort-feedback quiz-feedback"></div>
+  </div>
+
+  <!-- Interactive 3: Flashcards (知己知彼 翻转卡) -->
+  <div class="interactive-area">
+    <h2>🃏 翻转卡片 · 深入理解</h2>
+    <div class="flashcard-area">
+      <div class="flashcard" id="flashcard1">
+        <div class="front">❓ 点击翻转：<br>“知己知彼”在系统思想中的作用是什么？</div>
+        <div class="back">💡 知己知彼是动态运筹与信息控制的基础，只有全面了解敌我，才能制定正确的战略战术，做到百战不殆。</div>
+      </div>
+      <div class="flashcard-controls">
+        <button class="btn btn-secondary" id="flipBtn">翻转卡片</button>
+        <button class="btn btn-secondary" id="nextCard">下一张</button>
+      </div>
+      <div style="margin-top:0.4rem; color:#6a7c8b; font-size:0.9rem;" id="cardCounter">卡片 1 / 3</div>
+    </div>
+  </div>
+
+  <!-- Summary + Next Steps -->
+  <div class="summary-box">
+    <h3>📌 总结</h3>
+    <p>《孙子兵法》的系统思想强调从全面战略高度分析战争，注重战略与战术的结合，并通过动态运筹、信息控制以及知己知彼来掌握战争主动权。这些原则不仅适用于古代战场，对现代管理与决策同样具有启发意义。</p>
+    <div class="next-steps">
+      🚀 <strong>下一步建议</strong>：尝试将“知己知彼”与“动态运筹”应用到你的学习或工作计划中，观察信息收集与灵活调整如何提升你的效率。
+    </div>
+  </div>
+  <hr>
+  <div style="text-align:center; color:#8f9aa6; font-size:0.85rem;">互动课件 · 基于《孙子兵法》系统思想摘要</div>
+</div>
+
+<script>
+(function() {
+  // ----- Quiz 1 -----
+  const checkBtn = document.getElementById('checkQuiz1');
+  const fb = document.getElementById('quiz1Feedback');
+  checkBtn.addEventListener('click', function() {
+    const selected = document.querySelector('input[name="q1"]:checked');
+    if (!selected) {
+      fb.textContent = '请先选择一个选项。';
+      fb.className = 'quiz-feedback wrong-fb';
+      return;
+    }
+    if (selected.value === 'B') {
+      fb.textContent = '✅ 正确！《孙子兵法》系统思想正是战略与战术结合，动态运筹与信息控制。';
+      fb.className = 'quiz-feedback correct-fb';
+    } else {
+      fb.textContent = '❌ 不太准确。请再读摘要：系统思想包含战略战术结合、动态运筹、信息控制及知己知彼。';
+      fb.className = 'quiz-feedback wrong-fb';
+    }
+  });
+
+  // ----- Drag & Drop Sort -----
+  const dragItems = document.querySelectorAll('.drag-item');
+  const dropZone = document.getElementById('dropZone');
+  const sourceContainer = document.getElementById('dragSource');
+  const resetBtn = document.getElementById('resetSort');
+  const checkSortBtn = document.getElementById('checkSort');
+  const sortFb = document.getElementById('sortFeedback');
+
+  // 初始放置: 把所有drag-item放到source
+  function resetDrag() {
+    sourceContainer.innerHTML = '';
+    const items = [
+      { id: '3', text: '知己知彼' },
+      { id: '1', text: '战略全局分析' },
+      { id: '4', text: '动态运筹调整' },
+      { id: '2', text: '战术执行' },
+      { id: '5', text: '信息控制' }
+    ];
+    items.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'drag-item';
+      div.draggable = true;
+      div.dataset.id = item.id;
+      div.textContent = item.text;
+      sourceContainer.appendChild(div);
+    });
+    dropZone.innerHTML = '';
+    sortFb.textContent = '';
+    sortFb.className = 'sort-feedback quiz-feedback';
+    attachDragListeners();
+  }
+
+  function attachDragListeners() {
+    document.querySelectorAll('.drag-item').forEach(el => {
+      el.addEventListener('dragstart', handleDragStart);
+      el.addEventListener('dragend', handleDragEnd);
+    });
+  }
+
+  function handleDragStart(e) {
+    e.dataTransfer.setData('text/plain', e.target.dataset.id);
+    e.dataTransfer.effectAllowed = 'move';
+    e.target.classList.add('dragging');
+  }
+
+  function handleDragEnd(e) {
+    e.target.classList.remove('dragging');
+  }
+
+  // drop zone 监听
+  dropZone.addEventListener('dragover', e => e.preventDefault());
+  dropZone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    const id = e.dataTransfer.getData('text/plain');
+    const draggedEl = document.querySelector(`.drag-item[data-id="${id}"]`);
+    if (!draggedEl) return;
+    // 如果来自source，clone并移除原item
+    if (draggedEl.parentNode === sourceContainer) {
+      const clone = draggedEl.cloneNode(true);
+      clone.draggable = true;
+      clone.dataset.id = id;
+      clone.classList.remove('dragging');
+      dropZone.appendChild(clone);
+      draggedEl.remove();
+    } else {
+      // 来自dropZone内部，重新排序（简单处理：移动到末尾）
+      const clone = draggedEl.cloneNode(true);
+      clone.draggable = true;
+      clone.dataset.id = id;
+      clone.classList.remove('dragging');
+      dropZone.appendChild(clone);
+      draggedEl.remove();
+    }
+    attachDragListeners();
+    sortFb.textContent = '';
+    sortFb.className = 'sort-feedback quiz-feedback';
+  });
+
+  // 允许从dropZone拖回source (可选)
+  sourceContainer.addEventListener('dragover', e => e.preventDefault());
+  sourceContainer.addEventListener('drop', function(e) {
+    e.preventDefault();
+    const id = e.dataTransfer.getData('text/plain');
+    const draggedEl = document.querySelector(`.drag-item[data-id="${id}"]`);
+    if (!draggedEl || draggedEl.parentNode !== dropZone) return;
+    const clone = draggedEl.cloneNode(true);
+    clone.draggable = true;
+    clone.dataset.id = id;
+    clone.classList.remove('dragging');
+    sourceContainer.appendChild(clone);
+    draggedEl.remove();
+    attachDragListeners();
+    sortFb.textContent = '';
+    sortFb.className = 'sort-feedback quiz-feedback';
+  });
+
+  resetBtn.addEventListener('click', resetDrag);
+
+  const correctOrder = ['1','2','3','4','5']; // 战略全局分析 -> 战术执行 -> 知己知彼 -> 动态运筹调整 -> 信息控制
+  checkSortBtn.addEventListener('click', function() {
+    const items = dropZone.querySelectorAll('.drag-item');
+    if (items.length === 0) {
+      sortFb.textContent = '请将要素拖入排序区域。';
+      sortFb.className = 'sort-feedback quiz-feedback wrong-fb';
+      return;
+    }
+    const order = Array.from(items).map(el => el.dataset.id);
+    if (order.length !== correctOrder.length) {
+      sortFb.textContent = '❌ 请将所有五个要素都放入排序区。';
+      sortFb.className = 'sort-feedback quiz-feedback wrong-fb';
+      return;
+    }
+    let isCorrect = true;
+    for (let i = 0; i < correctOrder.length; i++) {
+      if (order[i] !== correctOrder[i]) { isCorrect = false; break; }
+    }
+    if (isCorrect) {
+      sortFb.textContent = '✅ 正确！系统思想的逻辑：战略全局分析 → 战术执行 → 知己知彼 → 动态运筹调整 → 信息控制。';
+      sortFb.className = 'sort-feedback quiz-feedback correct-fb';
+    } else {
+      sortFb.textContent = '❌ 顺序不太对。提示：先有全局战略，再执行战术，知己知彼是基础，动态运筹与信息控制贯穿其中。';
+      sortFb.className = 'sort-feedback quiz-feedback wrong-fb';
+    }
+  });
+
+  // ----- Flashcards -----
+  const flashcards = [
+    { front: '❓ 点击翻转：<br>“知己知彼”在系统思想中的作用是什么？', back: '💡 知己知彼是动态运筹与信息控制的基础，只有全面了解敌我，才能制定正确的战略战术，做到百战不殆。' },
+    { front: '❓ 点击翻转：<br>什么是“动态运筹”？', back: '💡 根据敌我形势、地形、天候等因素灵活调整计划，因敌制胜，不固守一成不变的方案。' },
+    { front: '❓ 点击翻转：<br>“信息控制”在战争中如何体现？', back: '💡 掌握关键情报，同时隐藏自身意图，做到“形人而我无形”，使敌人难以判断我方行动。' }
+  ];
+  let currentCard = 0;
+  const flashcardEl = document.getElementById('flashcard1');
+  const frontEl = flashcardEl.querySelector('.front');
+  const backEl = flashcardEl.querySelector('.back');
+  const cardCounter = document.getElementById('cardCounter');
+
+  function updateCard(index) {
+    const card = flashcards[index];
+    frontEl.innerHTML = card.front;
+    backEl.innerHTML = card.back;
+    flashcardEl.classList.remove('show-back');
+    cardCounter.textContent = `卡片 ${index+1} / ${flashcards.length}`;
+  }
+
+  document.getElementById('flipBtn').addEventListener('click', function() {
+    flashcardEl.classList.toggle('show-back');
+  });
+
+  flashcardEl.addEventListener('click', function() {
+    flashcardEl.classList.toggle('show-back');
+  });
+
+  document.getElementById('nextCard').addEventListener('click', function() {
+    currentCard = (currentCard + 1) % flashcards.length;
+    updateCard(currentCard);
+  });
+
+  // 初始化
+  resetDrag();
+  updateCard(0);
+})();
+</script>
+</body>
+</html>

@@ -101,6 +101,9 @@ class ChatSessionRequest(BaseModel):
     role: str = "user"
     content: str = ""
 
+class UpdateSessionTitleRequest(BaseModel):
+    title: str
+
 class SocraticChatRequest(BaseModel):
     book_name: str
     message: str
@@ -573,6 +576,14 @@ async def delete_chat_session(book_name: str, session_id: str) -> dict:
 async def append_chat_message(book_name: str, session_id: str, req: ChatSessionRequest) -> dict:
     from .services import chat_session_service
     return chat_session_service.append_message(book_name, session_id, req.role, req.content)
+
+@router.put("/chat/sessions/{book_name}/{session_id}/title")
+async def update_session_title(book_name: str, session_id: str, req: UpdateSessionTitleRequest) -> dict:
+    from .services import chat_session_service
+    data = chat_session_service.update_title(book_name, session_id, req.title)
+    if data is None:
+        raise HTTPException(404, f"Session {session_id} not found")
+    return data
 
 
 # ====================================================================

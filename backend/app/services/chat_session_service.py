@@ -102,6 +102,18 @@ def create_session(book_name: str) -> dict:
     return data
 
 
+def update_title(book_name: str, session_id: str, title: str) -> dict | None:
+    """Update the title of a session file. Returns None if not found."""
+    path = _chats_dir(book_name) / f"{session_id}.json"
+    if not path.is_file():
+        return None
+    data = _json.loads(path.read_text(encoding="utf-8"))
+    data["title"] = title
+    data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    atomic_write_json(path, data)
+    return data
+
+
 def delete_session(book_name: str, session_id: str) -> bool:
     """Delete a session file. Returns True if deleted."""
     path = _chats_dir(book_name) / f"{session_id}.json"
