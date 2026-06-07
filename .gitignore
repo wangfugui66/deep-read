@@ -68,3 +68,7 @@ Thumbs.db
 
 # ── Skills (installed globally via npx skills add; local copies are transient) ──
 /skills/
+
+# ── Build artifacts (generated, never commit) ──
+*.tsbuildinfo
+$null
