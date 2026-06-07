@@ -204,7 +204,7 @@ export default function KnowledgeAnimationModal({
   // ── Guard: SSR ──
   if (typeof document === "undefined" || !isOpen) return null;
 
-  const showPlayer = playerReady && !isLoading && blobUrl && !playerError;
+  const isReadyToPlay = playerReady && !!blobUrl && !isLoading && !playerError;
 
   return createPortal(
     <div
@@ -234,7 +234,7 @@ export default function KnowledgeAnimationModal({
         </div>
 
         {/* ── Body ── */}
-        <div className="flex-1 relative bg-black">
+        <div className="flex-1 relative bg-black min-h-[400px]">
           {/* Loading state */}
           {isLoading && <LoadingOverlay />}
 
@@ -253,7 +253,14 @@ export default function KnowledgeAnimationModal({
           )}
 
           {/* Player container (imperatively populated, avoids JSX type-check) */}
-          {showPlayer && <div ref={containerRef} className="w-full h-full" />}
+          {isReadyToPlay && (
+            <div
+              ref={containerRef}
+              key={blobUrl}
+              className="w-full h-full block transition-opacity duration-500"
+              style={{ opacity: playerReady ? 1 : 0 }}
+            />
+          )}
 
           {/* Empty state: player ready but no content yet */}
           {playerReady && !isLoading && !blobUrl && !playerError && (

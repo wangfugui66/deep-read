@@ -148,6 +148,9 @@ export default function ReadPage() {
         const msg = err instanceof Error ? err.message : "未知错误";
         alert("动画生成失败: " + msg);
         setAnimationStatus("idle");
+      } finally {
+        // Safety net: ensure generating state never gets stuck regardless of path
+        setAnimationStatus((prev) => (prev === "generating" ? "idle" : prev));
       }
     })();
   }, [animationStatus, bookName]);
