@@ -77,7 +77,7 @@ DEEPSEEK_API_KEY=sk-your-key-here docker compose --profile fullstack up
     ↓
 Architect Agent 根据画像生成四级阅读策略
     ↓
-目录树叠加显示：精读 🔴 / 速读 🟡 / 选读 🔵
+阅读建议显示：精读🔴 
     ↓
 精读章节 → 通关测验（≥80% 正确率）
     ↓
