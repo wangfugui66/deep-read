@@ -47,7 +47,7 @@ export default function TopBar({ onToggleToc }: Props) {
           <button onClick={onToggleToc} className="p-1.5 rounded-md hover:bg-neutral-100 transition-colors" title="目录">
             <PanelLeft size={18} />
           </button>
-          <span className="text-sm font-medium text-neutral-600 hidden sm:inline">DeepRead</span>
+          <span className="text-sm font-medium text-neutral-600 hidden sm:inline">FluxRead</span>
         </div>
 
         {/* Right group */}

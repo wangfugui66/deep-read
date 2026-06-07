@@ -3,6 +3,7 @@
 import { ChevronLeft, Loader2, Sparkles, ArrowRight } from "lucide-react";
 import { useReaderStore } from "@/lib/stores/readerStore";
 import type { ChapterRef, SkeletonTocData } from "@/lib/types";
+import TeachAnyButton from "@/app/components/reader/TeachAnyButton";
 
 type Theme = "day" | "warm" | "night";
 const BOTTOM_BG: Record<Theme, string> = {
@@ -18,14 +19,17 @@ const BOTTOM_TEXT: Record<Theme, string> = {
 };
 
 interface Props {
+  bookName: string;
   chapters: ChapterRef[];
   currentPath: string;
+  chapterContent: string;
+  chapterStrategy?: string;
   quizGenerating?: boolean;
   skeletonToc?: SkeletonTocData | null;
   onNavigate: (path: string) => void;
 }
 
-export default function BottomNav({ chapters, currentPath, quizGenerating, skeletonToc, onNavigate }: Props) {
+export default function BottomNav({ bookName, chapters, currentPath, chapterContent, chapterStrategy, quizGenerating, skeletonToc, onNavigate }: Props) {
   const { theme, readingMode } = useReaderStore();
   const sorted = [...chapters].sort((a, b) =>
     a.path.localeCompare(b.path, undefined, { numeric: true, sensitivity: "base" })
@@ -77,6 +81,16 @@ export default function BottomNav({ chapters, currentPath, quizGenerating, skele
       <span className="text-[10px] text-neutral-400 tabular-nums min-w-[40px] text-center">
         {idx + 1} / {sorted.length}
       </span>
+
+      {/* Knowledge sandbox — hidden in immersive */}
+      {readingMode !== "immersive" && (
+        <TeachAnyButton
+          bookName={bookName}
+          chapterPath={currentPath}
+          chapterContent={chapterContent}
+          chapterStrategy={chapterStrategy}
+        />
+      )}
 
       <button
         onClick={() => next && onNavigate(next.path)}

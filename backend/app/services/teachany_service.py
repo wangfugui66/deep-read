@@ -50,8 +50,17 @@ interactive lesson**.
 3. The lesson MUST include at least **three interactive components** (e.g. drag-and-drop
    sorting, concept-check quizzes, clickable flashcards, fill-in-the-blank, diagram
    exploration, timeline slider, etc.). Use vanilla JS only.
-4. Structure the content with clear sections:
-   - Title + introductory hook (ABT narrative: And-But-Therefore)
+4. Structure the content into clearly separated sections:
+   - Title + introductory hook: use a natural "背景 — 冲突 — 结论" narrative flow.
+     You MUST fuse these three logical layers into ONE seamless, elegant Chinese
+     paragraph, using natural semantic transition words (e.g. 然而, 正因如此,
+     这要求我们, 由此看来) instead of mechanical labels.
+     【最高警报 — ABSOLUTE PROHIBITION】
+     * NEVER output the words "And", "But", "Therefore" as visible text or HTML labels.
+     * NEVER output "安", "但", "因此" as prefix labels anywhere in the page.
+     * NEVER expose the ABT framework structure to the reader.  The reader must
+       perceive a smooth, continuous narrative — never a decomposed outline.
+     * Violation of this rule is the single most critical quality failure.
    - Key concepts explained in simple language
    - At least 2 interactive exercises with immediate feedback
    - A summary + "next steps" suggestion
@@ -144,7 +153,7 @@ async def generate_courseware(
             model="deepseek-chat",
             messages=[
                 {"role": "system", "content": TEACHANY_SYSTEM_PROMPT},
-                {"role": "user", "content": f"请基于以下章节摘要生成互动课件：\n\n{context_text[:12000]}"},
+                {"role": "user", "content": f"请基于以下章节摘要生成知识沙盘：\n\n{context_text[:12000]}"},
             ],
             temperature=0.6,
             max_tokens=8192,
@@ -157,13 +166,16 @@ async def generate_courseware(
     # 4. Clean output — strip markdown fences
     html = _strip_markdown_fences(raw_output)
 
+    # 5. Sanitize — enforce product vocabulary at the code level
+    html = _sanitize_html(html)
+
     if not html.strip().startswith("<"):
         return {
             "status": "error",
             "message": "LLM output does not appear to be HTML — may be truncated or misformatted",
         }
 
-    # 5. Atomic write to cache
+    # 6. Atomic write to cache
     try:
         cache_path.write_text(html, encoding="utf-8")
         logger.info("TeachAny courseware cached: %s (%d bytes)", cache_path, len(html))
@@ -187,3 +199,12 @@ def _strip_markdown_fences(text: str) -> str:
     # Remove closing fence
     t = re.sub(r"\n?```\s*$", "", t)
     return t.strip()
+
+
+def _sanitize_html(html: str) -> str:
+    """Post-process the LLM output to enforce product vocabulary at the code level.
+
+    This is the safety net: even if the prompt is ignored, the cache never contains
+    stale branding terminology.
+    """
+    return html.replace("互动课件", "知识沙盘")

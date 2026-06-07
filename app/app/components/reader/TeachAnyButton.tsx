@@ -95,7 +95,7 @@ export default function TeachAnyButton({ bookName, chapterPath, chapterContent, 
         disabled={disabled}
         title={tooltip}
         onClick={handleClick}
-        className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition-all ${
+        className={`inline-flex items-center gap-1.5 px-4 py-2 text-xs rounded-md transition-all ${
           disabled
             ? "bg-neutral-100 text-neutral-350 cursor-not-allowed opacity-60"
             : "bg-indigo-50 border border-indigo-200 text-indigo-600 hover:bg-indigo-100 active:scale-95"

@@ -9,6 +9,10 @@
 # Keep directory structure placeholders only
 !/data/raw/.gitkeep
 !/data/wiki/.gitkeep
+!/data/plugins/.gitkeep
+
+# ── Plugin runtime caches (generated at runtime, never commit) ──
+/data/plugins/teachany_cache/
 
 # ── Python ──
 __pycache__/

@@ -17,7 +17,6 @@ import ProfileWizardModal from "@/app/components/profile/ProfileWizardModal";
 import BottomNav from "@/app/components/reader/BottomNav";
 import InnerReaderHeader from "@/app/components/reader/InnerReaderHeader";
 import SelectionToolbar from "@/app/components/reader/SelectionToolbar";
-import TeachAnyButton from "@/app/components/reader/TeachAnyButton";
 
 const THEME_BG: Record<string, string> = {
   day: "bg-[#F9F7F3]",
@@ -286,22 +285,15 @@ export default function ReadPage() {
             loading={loading}
           />
 
-          {/* TeachAny 单节课件入口（带守门员） */}
-          {currentChapterPath && !loading && (
-            <div className="px-6 pb-2 flex justify-end">
-              <TeachAnyButton
-                bookName={bookName}
-                chapterPath={currentChapterPath ?? ""}
-                chapterContent={body ?? ""}
-                chapterStrategy={getChapterStrategy(currentChapterPath)}
-              />
-            </div>
-          )}
+          {/* TeachAny 知识沙盘入口已迁移至 BottomNav */}
 
           {chapters.length > 0 && currentChapterPath && !loading && (
             <BottomNav
+              bookName={bookName}
               chapters={chapters}
               currentPath={currentChapterPath}
+              chapterContent={body ?? ""}
+              chapterStrategy={getChapterStrategy(currentChapterPath)}
               skeletonToc={skeletonToc}
               quizGenerating={quizGenerating}
               onNavigate={handleChapterNavigate}

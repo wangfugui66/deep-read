@@ -3,10 +3,12 @@ FROM node:20-alpine
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-RUN npm ci --omit=dev 2>/dev/null || npm install
+RUN npm ci
 
 COPY . .
 
-RUN npm run build 2>/dev/null || echo "build skipped (dev mode)"
+RUN npm run build
+
+EXPOSE 3000
 
 CMD ["npm", "run", "start"]
