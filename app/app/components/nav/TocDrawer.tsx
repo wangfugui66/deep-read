@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
-  X, ChevronLeft, ChevronRight, ChevronDown, Loader2, Sparkles, BookOpen, Stethoscope, Layers,
+  X, ChevronLeft, ChevronRight, ChevronDown, Loader2, Sparkles, BookOpen, Stethoscope, Layers, Clapperboard,
 } from "lucide-react";
 import { fetchChapters, fetchDynamicToc, fetchIndexingStatus, generateSkeleton, deleteProfile } from "@/lib/api_client";
 import { useReaderStore } from "@/lib/stores/readerStore";
@@ -20,6 +20,15 @@ interface TocNode {
   children: TocNode[];
 }
 
+/** Recursively collect all paths from a node and its descendants. */
+function collectAllPaths(node: TocNode): string[] {
+  const paths: string[] = [node.path];
+  for (const child of node.children) {
+    paths.push(...collectAllPaths(child));
+  }
+  return paths;
+}
+
 interface StrategyInfo {
   strategy: string;
   advice?: string;
@@ -32,6 +41,7 @@ interface Props {
   onOpenWizard?: () => void;
   refreshKey?: number;
   isGeneratingSkeleton?: boolean;
+  onGenerateAnimation?: (paths: string[]) => void;
 }
 
 function cleanChapterTitle(title: string): string {
@@ -84,7 +94,7 @@ function normalizePath(p: string): string {
   catch { return p.replace(/\\/g, "/").replace(/^\/+/, "").toLowerCase(); }
 }
 
-export default function TocDrawer({ bookName, isOpen, onClose, onOpenWizard, refreshKey, isGeneratingSkeleton }: Props) {
+export default function TocDrawer({ bookName, isOpen, onClose, onOpenWizard, refreshKey, isGeneratingSkeleton, onGenerateAnimation }: Props) {
   // ── Original TOC state ──
   const [chapters, setChapters] = useState<ChapterRef[]>([]);
   const [loadingChapters, setLoadingChapters] = useState(true);
@@ -302,15 +312,6 @@ export default function TocDrawer({ bookName, isOpen, onClose, onOpenWizard, ref
       console.error("❌ [2] POST 请求失败:", err instanceof Error ? err.message : String(err));
       alert("索引构建请求失败，请确认后端已启动");
     }
-  };
-
-  // ── Recursive path collector ──
-  const collectAllPaths = (node: TocNode): string[] => {
-    const paths: string[] = [node.path];
-    for (const child of node.children) {
-      paths.push(...collectAllPaths(child));
-    }
-    return paths;
   };
 
   // ── TeachAny aggregation handler — for native tree parent nodes ──
@@ -534,6 +535,8 @@ export default function TocDrawer({ bookName, isOpen, onClose, onOpenWizard, ref
               readPaths={readPaths}
               isImmersive={isImmersive}
               onAggregateNode={handleAggregateNode}
+              onGenerateAnimation={onGenerateAnimation}
+              onClose={onClose}
               aggregatingPath={aggregatingPath}
             />
           )}
@@ -548,7 +551,7 @@ export default function TocDrawer({ bookName, isOpen, onClose, onOpenWizard, ref
 // ====================================================================
 
 function TreeNodeList({
-  nodes, currentPath, collapsed, indentMap, onSelect, onToggleCollapse, chapters, strategyMap, readPaths, isImmersive, onAggregateNode, aggregatingPath,
+  nodes, currentPath, collapsed, indentMap, onSelect, onToggleCollapse, chapters, strategyMap, readPaths, isImmersive, onAggregateNode, onGenerateAnimation, onClose, aggregatingPath,
 }: {
   nodes: TocNode[];
   currentPath: string | null;
@@ -561,6 +564,8 @@ function TreeNodeList({
   readPaths: Set<string>;
   isImmersive: boolean;
   onAggregateNode: (node: TocNode) => void;
+  onGenerateAnimation?: (paths: string[]) => void;
+  onClose: () => void;
   aggregatingPath: string | null;
 }) {
   return (
@@ -617,21 +622,37 @@ function TreeNodeList({
                 </span>
               </span>
 
-              {/* Aggregation button — parent nodes only, hidden in immersive */}
+              {/* Aggregation buttons — parent nodes only, hidden in immersive */}
               {!isImmersive && hasChildren && (
-                <span
-                  onClick={(e) => { e.stopPropagation(); onAggregateNode(node); }}
-                  className="shrink-0 p-0.5 rounded text-neutral-300 hover:text-indigo-500 hover:bg-indigo-50 transition-colors"
-                  title={aggregatingPath === node.path
-                    ? "知识沙盘生成中…"
-                    : `聚合「${node.displayTitle}」及子章节`}
-                >
-                  {aggregatingPath === node.path ? (
-                    <Loader2 size={11} className="animate-spin" />
-                  ) : (
-                    <Layers size={11} />
+                <>
+                  <span
+                    onClick={(e) => { e.stopPropagation(); onAggregateNode(node); }}
+                    className="shrink-0 p-0.5 rounded text-neutral-300 hover:text-indigo-500 hover:bg-indigo-50 transition-colors"
+                    title={aggregatingPath === node.path
+                      ? "知识沙盘生成中…"
+                      : `聚合「${node.displayTitle}」及子章节`}
+                  >
+                    {aggregatingPath === node.path ? (
+                      <Loader2 size={11} className="animate-spin" />
+                    ) : (
+                      <Layers size={11} />
+                    )}
+                  </span>
+                  {onGenerateAnimation && (
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const paths = collectAllPaths(node).filter((p: string) => p?.trim());
+                        onGenerateAnimation(paths);
+                        onClose();
+                      }}
+                      className="shrink-0 p-0.5 rounded text-neutral-300 hover:text-purple-500 hover:bg-purple-50 transition-colors"
+                      title={`生成「${node.displayTitle}」知识动画`}
+                    >
+                      <Clapperboard size={11} />
+                    </span>
                   )}
-                </span>
+                </>
               )}
 
               {/* Strategy badge — only 精读 gets visual emphasis, hidden in immersive mode */}
@@ -656,6 +677,8 @@ function TreeNodeList({
                 readPaths={readPaths}
                 isImmersive={isImmersive}
                 onAggregateNode={onAggregateNode}
+                onGenerateAnimation={onGenerateAnimation}
+                onClose={onClose}
                 aggregatingPath={aggregatingPath}
               />
             )}

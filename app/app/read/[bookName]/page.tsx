@@ -7,6 +7,7 @@ import { useReaderStore } from "@/lib/stores/readerStore";
 import { useChatStore } from "@/lib/stores/chatStore";
 import type { SkeletonTocData } from "@/lib/types";
 import QuizModal from "@/app/components/reader/QuizModal";
+import KnowledgeAnimationModal from "@/app/components/reader/KnowledgeAnimationModal";
 
 import TopBar from "@/app/components/layout/TopBar";
 import TocDrawer from "@/app/components/nav/TocDrawer";
@@ -68,6 +69,9 @@ export default function ReadPage() {
   // Ref mirror for always-fresh reads inside stable callbacks (avoids stale closure)
   const skeletonTocRef = useRef<SkeletonTocData | null>(null);
   skeletonTocRef.current = skeletonToc;
+  const [isAnimationOpen, setIsAnimationOpen] = useState(false);
+  const [animationHtml, setAnimationHtml] = useState<string | null>(null);
+  const [isAnimationLoading, setIsAnimationLoading] = useState(false);
   const chatStore = useChatStore();
 
   const handleProfileComplete = useCallback(() => {
@@ -85,6 +89,16 @@ export default function ReadPage() {
         setIsGeneratingSkeleton(false);
       });
   }, [bookName, setWizardOpen, setTocOpen, setIsGeneratingSkeleton, bumpSkeletonRefreshKey]);
+
+  const handleGenerateAnimation = useCallback((targetPaths: string[]) => {
+    console.log("[KnowledgeAnimation] targetPaths:", targetPaths);
+    setIsAnimationOpen(true);
+    setIsAnimationLoading(true);
+    setAnimationHtml(null);
+    setTimeout(() => {
+      setIsAnimationLoading(false);
+    }, 3000);
+  }, []);
 
   const goToChapter = useCallback(
     async (targetPath: string) => {
@@ -274,6 +288,7 @@ export default function ReadPage() {
           onOpenWizard={() => { setTocOpen(false); setWizardOpen(true); }}
           refreshKey={skeletonRefreshKey}
           isGeneratingSkeleton={isGeneratingSkeleton}
+          onGenerateAnimation={handleGenerateAnimation}
         />
 
         <main className={`flex-1 overflow-y-auto ${readingMode === "immersive" ? "max-w-full" : ""} ${THEME_BG[theme]}`}>
@@ -296,6 +311,7 @@ export default function ReadPage() {
               chapterStrategy={getChapterStrategy(currentChapterPath)}
               skeletonToc={skeletonToc}
               quizGenerating={quizGenerating}
+              onGenerateAnimation={handleGenerateAnimation}
               onNavigate={handleChapterNavigate}
             />
           )}
@@ -334,6 +350,13 @@ export default function ReadPage() {
           }}
         />
       )}
+
+      <KnowledgeAnimationModal
+        isOpen={isAnimationOpen}
+        onClose={() => setIsAnimationOpen(false)}
+        htmlContent={animationHtml}
+        isLoading={isAnimationLoading}
+      />
     </div>
   );
 }

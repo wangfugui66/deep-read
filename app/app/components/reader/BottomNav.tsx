@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, Loader2, Sparkles, ArrowRight } from "lucide-react";
+import { ChevronLeft, Loader2, Sparkles, ArrowRight, Clapperboard } from "lucide-react";
 import { useReaderStore } from "@/lib/stores/readerStore";
 import type { ChapterRef, SkeletonTocData } from "@/lib/types";
 import TeachAnyButton from "@/app/components/reader/TeachAnyButton";
@@ -26,10 +26,11 @@ interface Props {
   chapterStrategy?: string;
   quizGenerating?: boolean;
   skeletonToc?: SkeletonTocData | null;
+  onGenerateAnimation?: (paths: string[]) => void;
   onNavigate: (path: string) => void;
 }
 
-export default function BottomNav({ bookName, chapters, currentPath, chapterContent, chapterStrategy, quizGenerating, skeletonToc, onNavigate }: Props) {
+export default function BottomNav({ bookName, chapters, currentPath, chapterContent, chapterStrategy, quizGenerating, skeletonToc, onGenerateAnimation, onNavigate }: Props) {
   const { theme, readingMode } = useReaderStore();
   const sorted = [...chapters].sort((a, b) =>
     a.path.localeCompare(b.path, undefined, { numeric: true, sensitivity: "base" })
@@ -90,6 +91,17 @@ export default function BottomNav({ bookName, chapters, currentPath, chapterCont
           chapterContent={chapterContent}
           chapterStrategy={chapterStrategy}
         />
+      )}
+
+      {/* Knowledge animation — hidden in immersive */}
+      {readingMode !== "immersive" && onGenerateAnimation && (
+        <button
+          onClick={() => onGenerateAnimation([currentPath])}
+          className="inline-flex items-center gap-1.5 px-4 py-2 text-xs rounded-md border border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100 transition-all"
+        >
+          <Clapperboard size={14} />
+          知识动画
+        </button>
       )}
 
       <button
