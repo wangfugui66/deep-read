@@ -10,6 +10,8 @@
 2. **GSAP 引擎接入 (CRITICAL)**：必须严格使用以下标签引入 GSAP：`<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>`。时间轴必须以暂停状态初始化，以交由外部播放器接管：`const tl = gsap.timeline({ paused: true });`
 3. **接口暴露 (CRITICAL)**：在 `<script>` 末尾，必须导出时间轴：
    `window.__timelines = window.__timelines || {}; window.__timelines.main = tl;`
+4. **全局 CSS 防塌陷 (CRITICAL)**：在 `<head>` 的 `<style>` 中，必须明确写死：`html, body { width: 100%; height: 100%; margin: 0; padding: 0; }`。如果不写，舞台高度将塌陷为 0 导致黑屏！
+5. **脚本作用域 (CRITICAL)**：引入 GSAP 的 `<script src="...">` 以及包含动画逻辑的 `<script>` 标签，**必须且只能放在 `<div id="stage">` 的内部末尾处**。绝对不能放在 stage 的外面，否则播放器将无法读取时间轴！
 
 # 视觉叙事铁律：绝对禁止"PPT 式文字淡入淡出"
 如果你只是把几段文字用 opacity 切换，你将遭到彻底失败。
