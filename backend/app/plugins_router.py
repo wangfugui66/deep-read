@@ -72,7 +72,7 @@ async def teachany_view(book_name: str, file_name: str):
     if "/" in file_name or "\\" in file_name or ".." in file_name:
         raise HTTPException(400, "Invalid file_name")
 
-    html_path = PLUGINS_ROOT / book_name / file_name
+    html_path = TEACHANY_PLUGINS_ROOT / book_name / file_name
     if not html_path.is_file():
         raise HTTPException(404, f"Courseware not found: {file_name}")
 
@@ -81,3 +81,34 @@ async def teachany_view(book_name: str, file_name: str):
         media_type="text/html",
         headers={"Content-Type": "text/html; charset=utf-8"},
     )
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Knowledge Animation
+# ═══════════════════════════════════════════════════════════════════
+
+class AnimationGenerateRequest(BaseModel):
+    book_name: str
+    chapter_paths: list[str]
+
+
+@plugins_router.post("/animation/generate")
+async def animation_generate(req: AnimationGenerateRequest, request: Request) -> dict:
+    """Generate a HyperFrames knowledge animation HTML from raw chapter text.
+
+    Returns the full HTML string directly in JSON so the frontend Modal can
+    render it immediately — no secondary HTTP round-trip.
+    """
+    if not req.chapter_paths:
+        raise HTTPException(400, "chapter_paths must not be empty")
+
+    api_key = request.headers.get("x-api-key", "")
+
+    result = await generate_animation(
+        book_name=req.book_name,
+        chapter_paths=req.chapter_paths,
+        api_key=api_key,
+    )
+    if result.get("status") == "error":
+        raise HTTPException(500, result.get("message", "Unknown error"))
+    return result

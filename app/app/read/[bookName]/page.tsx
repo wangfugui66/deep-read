@@ -9,6 +9,7 @@ import type { SkeletonTocData } from "@/lib/types";
 import QuizModal from "@/app/components/reader/QuizModal";
 import KnowledgeAnimationModal from "@/app/components/reader/KnowledgeAnimationModal";
 
+import { API_BASE_URL } from "@/lib/api-config";
 import { Loader2 } from "lucide-react";
 
 import TopBar from "@/app/components/layout/TopBar";
@@ -96,16 +97,51 @@ export default function ReadPage() {
   const handleGenerateAnimation = useCallback((targetPaths: string[]) => {
     if (animationStatus === "generating") return;
     console.log("[KnowledgeAnimation] targetPaths:", targetPaths);
+
+    // ── API key guard ──
+    const apiKey = typeof window !== "undefined" ? localStorage.getItem("dr-api-key") ?? "" : "";
+    if (!apiKey) {
+      alert("请先在设置中配置 API Key");
+      return;
+    }
+
     setAnimationHtml(null);
     setAnimationStatus("generating");
 
-    // Mock: 3s 后完成（后续替换为真实 API 调用）
-    setTimeout(() => {
-      const mockHtml = `<!-- Placeholder: 知识动画 HTML -->`;
-      setAnimationHtml(mockHtml);
-      setAnimationStatus("ready");
-    }, 3000);
-  }, [animationStatus]);
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/plugins/animation/generate`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": apiKey,
+          },
+          body: JSON.stringify({
+            book_name: bookName,
+            chapter_paths: targetPaths,
+          }),
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          const msg = (errData as { detail?: string })?.detail || `HTTP ${res.status}`;
+          throw new Error(msg);
+        }
+
+        const data = await res.json();
+        if (data?.html) {
+          setAnimationHtml(String(data.html));
+          setAnimationStatus("ready");
+        } else {
+          throw new Error("后端未返回 HTML 内容");
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "未知错误";
+        alert("动画生成失败: " + msg);
+        setAnimationStatus("idle");
+      }
+    })();
+  }, [animationStatus, bookName]);
 
   const goToChapter = useCallback(
     async (targetPath: string) => {
