@@ -10,7 +10,7 @@ import QuizModal from "@/app/components/reader/QuizModal";
 import KnowledgeAnimationModal from "@/app/components/reader/KnowledgeAnimationModal";
 
 import { API_BASE_URL } from "@/lib/api-config";
-import { Loader2 } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 
 import TopBar from "@/app/components/layout/TopBar";
 import TocDrawer from "@/app/components/nav/TocDrawer";
@@ -72,6 +72,7 @@ export default function ReadPage() {
   // Ref mirror for always-fresh reads inside stable callbacks (avoids stale closure)
   const skeletonTocRef = useRef<SkeletonTocData | null>(null);
   skeletonTocRef.current = skeletonToc;
+  const lastAnimPathsRef = useRef<string>("");
   const [isAnimationOpen, setIsAnimationOpen] = useState(false);
   type AnimationStatus = "idle" | "generating" | "ready";
   const [animationStatus, setAnimationStatus] = useState<AnimationStatus>("idle");
@@ -97,6 +98,13 @@ export default function ReadPage() {
   const handleGenerateAnimation = useCallback((targetPaths: string[]) => {
     if (animationStatus === "generating") return;
     console.log("[KnowledgeAnimation] targetPaths:", targetPaths);
+
+    // ── Cache-hit: same paths already generated → just re-open modal ──
+    const pathKey = targetPaths.sort().join(",");
+    if (pathKey === lastAnimPathsRef.current && animationStatus === "ready") {
+      setIsAnimationOpen(true);
+      return;
+    }
 
     // ── API key guard ──
     const apiKey = typeof window !== "undefined" ? localStorage.getItem("dr-api-key") ?? "" : "";
@@ -132,6 +140,7 @@ export default function ReadPage() {
         if (data?.html) {
           setAnimationHtml(String(data.html));
           setAnimationStatus("ready");
+          lastAnimPathsRef.current = pathKey;
         } else {
           throw new Error("后端未返回 HTML 内容");
         }
@@ -409,28 +418,37 @@ export default function ReadPage() {
               </span>
             </button>
           ) : (
-            <button
-              onClick={() => setIsAnimationOpen(true)}
-              className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-neutral-900/90 backdrop-blur-md border border-purple-500/30 text-white shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 hover:scale-105 active:scale-95 transition-all group"
-            >
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-purple-500" />
-              </span>
-              <span className="text-xs font-medium text-neutral-200 group-hover:text-white transition-colors">
-                知识动画已就绪
-              </span>
-              <span className="text-[10px] text-purple-400 font-mono group-hover:text-purple-300 transition-colors">
-                [ 点击观看 ]
-              </span>
-            </button>
+            <div className="inline-flex items-center gap-1">
+              <button
+                onClick={() => setIsAnimationOpen(true)}
+                className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-neutral-900/90 backdrop-blur-md border border-purple-500/30 text-white shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 hover:scale-105 active:scale-95 transition-all group"
+              >
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-purple-500" />
+                </span>
+                <span className="text-xs font-medium text-neutral-200 group-hover:text-white transition-colors">
+                  知识动画已就绪
+                </span>
+                <span className="text-[10px] text-purple-400 font-mono group-hover:text-purple-300 transition-colors">
+                  [ 点击观看 ]
+                </span>
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setAnimationStatus("idle"); }}
+                className="p-1 rounded-full bg-neutral-800/80 text-neutral-500 hover:text-neutral-200 hover:bg-neutral-700/80 transition-colors"
+                title="关闭通知"
+              >
+                <X size={12} />
+              </button>
+            </div>
           )}
         </div>
       )}
 
       <KnowledgeAnimationModal
         isOpen={isAnimationOpen}
-        onClose={() => { setIsAnimationOpen(false); setAnimationStatus("idle"); }}
+        onClose={() => setIsAnimationOpen(false)}
         htmlContent={animationHtml}
         isLoading={animationStatus === "generating"}
       />
