@@ -9,6 +9,8 @@ import type { SkeletonTocData } from "@/lib/types";
 import QuizModal from "@/app/components/reader/QuizModal";
 import KnowledgeAnimationModal from "@/app/components/reader/KnowledgeAnimationModal";
 
+import { Loader2 } from "lucide-react";
+
 import TopBar from "@/app/components/layout/TopBar";
 import TocDrawer from "@/app/components/nav/TocDrawer";
 import ReaderView from "@/app/components/reader/ReaderView";
@@ -70,8 +72,9 @@ export default function ReadPage() {
   const skeletonTocRef = useRef<SkeletonTocData | null>(null);
   skeletonTocRef.current = skeletonToc;
   const [isAnimationOpen, setIsAnimationOpen] = useState(false);
+  type AnimationStatus = "idle" | "generating" | "ready";
+  const [animationStatus, setAnimationStatus] = useState<AnimationStatus>("idle");
   const [animationHtml, setAnimationHtml] = useState<string | null>(null);
-  const [isAnimationLoading, setIsAnimationLoading] = useState(false);
   const chatStore = useChatStore();
 
   const handleProfileComplete = useCallback(() => {
@@ -91,14 +94,18 @@ export default function ReadPage() {
   }, [bookName, setWizardOpen, setTocOpen, setIsGeneratingSkeleton, bumpSkeletonRefreshKey]);
 
   const handleGenerateAnimation = useCallback((targetPaths: string[]) => {
+    if (animationStatus === "generating") return;
     console.log("[KnowledgeAnimation] targetPaths:", targetPaths);
-    setIsAnimationOpen(true);
-    setIsAnimationLoading(true);
     setAnimationHtml(null);
+    setAnimationStatus("generating");
+
+    // Mock: 3s 后完成（后续替换为真实 API 调用）
     setTimeout(() => {
-      setIsAnimationLoading(false);
+      const mockHtml = `<!-- Placeholder: 知识动画 HTML -->`;
+      setAnimationHtml(mockHtml);
+      setAnimationStatus("ready");
     }, 3000);
-  }, []);
+  }, [animationStatus]);
 
   const goToChapter = useCallback(
     async (targetPath: string) => {
@@ -351,11 +358,45 @@ export default function ReadPage() {
         />
       )}
 
+      {/* ── Dual-state floating notification capsule ── */}
+      {!isAnimationOpen && animationStatus !== "idle" && (
+        <div className="fixed bottom-6 right-6 z-[125] animate-in slide-in-from-right-4 duration-300">
+          {animationStatus === "generating" ? (
+            <button
+              onClick={() => setIsAnimationOpen(true)}
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-neutral-900/80 backdrop-blur-md border border-neutral-700/50 text-neutral-400 shadow-lg hover:border-neutral-600/50 hover:text-neutral-300 transition-all group"
+            >
+              <Loader2 size={12} className="animate-spin text-neutral-500" />
+              <span className="text-xs">正在构思分镜代码...</span>
+              <span className="text-[10px] text-neutral-600 group-hover:text-neutral-500 transition-colors">
+                [ 查看进度 ]
+              </span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setIsAnimationOpen(true)}
+              className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-neutral-900/90 backdrop-blur-md border border-purple-500/30 text-white shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 hover:scale-105 active:scale-95 transition-all group"
+            >
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-purple-500" />
+              </span>
+              <span className="text-xs font-medium text-neutral-200 group-hover:text-white transition-colors">
+                知识动画已就绪
+              </span>
+              <span className="text-[10px] text-purple-400 font-mono group-hover:text-purple-300 transition-colors">
+                [ 点击观看 ]
+              </span>
+            </button>
+          )}
+        </div>
+      )}
+
       <KnowledgeAnimationModal
         isOpen={isAnimationOpen}
-        onClose={() => setIsAnimationOpen(false)}
+        onClose={() => { setIsAnimationOpen(false); setAnimationStatus("idle"); }}
         htmlContent={animationHtml}
-        isLoading={isAnimationLoading}
+        isLoading={animationStatus === "generating"}
       />
     </div>
   );

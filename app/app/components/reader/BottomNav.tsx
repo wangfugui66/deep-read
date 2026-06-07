@@ -68,6 +68,10 @@ export default function BottomNav({ bookName, chapters, currentPath, chapterCont
   // In immersive mode, intensive chapters are treated as normal (no quiz gate)
   const isIntensive = !!(skeletonToc && strategy === "精读" && readingMode !== "immersive");
 
+  // ── Animation gatekeeper (synced with TeachAnyButton: wordCount < 1000) ──
+  const wordCount = chapterContent?.length || 0;
+  const animationTooShort = wordCount < 1000;
+
   return (
     <div className={`flex items-center justify-center gap-12 px-4 py-6 !border-none !shadow-none sticky bottom-0 z-50 ${BOTTOM_BG[theme]} ${BOTTOM_TEXT[theme]}`}>
       <button
@@ -93,11 +97,19 @@ export default function BottomNav({ bookName, chapters, currentPath, chapterCont
         />
       )}
 
-      {/* Knowledge animation — hidden in immersive */}
+      {/* Knowledge animation — sync gatekeeper with TeachAny: wordCount >= 1000 */}
       {readingMode !== "immersive" && onGenerateAnimation && (
         <button
           onClick={() => onGenerateAnimation([currentPath])}
-          className="inline-flex items-center gap-1.5 px-4 py-2 text-xs rounded-md border border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100 transition-all"
+          disabled={animationTooShort}
+          title={animationTooShort
+            ? "本节内容较少（不足1000字），请使用左侧目录的章节聚合入口生成知识动画"
+            : "生成知识动画"}
+          className={`inline-flex items-center gap-1.5 px-4 py-2 text-xs rounded-md border transition-all ${
+            animationTooShort
+              ? "bg-neutral-100 text-neutral-350 cursor-not-allowed opacity-60 border-neutral-200"
+              : "border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100"
+          }`}
         >
           <Clapperboard size={14} />
           知识动画
