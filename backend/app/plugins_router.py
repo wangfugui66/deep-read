@@ -12,7 +12,8 @@ from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
 
 from app.core.config import DATA_ROOT
-from app.services.teachany_service import generate_courseware, PLUGINS_ROOT
+from app.services.teachany_service import generate_courseware, PLUGINS_ROOT as TEACHANY_PLUGINS_ROOT
+from app.services.knowledge_animation_service import generate_animation
 
 logger = logging.getLogger("deepread.plugins")
 
