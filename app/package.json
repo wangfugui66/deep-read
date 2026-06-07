@@ -9,8 +9,10 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@hyperframes/player": "^0.6.80",
     "@types/mark.js": "^8.11.12",
     "clsx": "^2.1.1",
+    "gsap": "^3.15.0",
     "lucide-react": "^0.503.0",
     "mark.js": "^8.11.1",
     "next": "^15.3.0",

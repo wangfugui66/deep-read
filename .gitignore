@@ -61,3 +61,10 @@ Thumbs.db
 # ── OS junk ──
 *.log
 *.tmp
+
+# ── Root node_modules (cwd hoisting artifact) ──
+/node_modules/
+/package-lock.json
+
+# ── Skills (installed globally via npx skills add; local copies are transient) ──
+/skills/
