@@ -160,8 +160,8 @@ export default function KnowledgeAnimationModal({
 
     const player = document.createElement("hyperframes-player");
     player.setAttribute("src", blobUrl);
-    player.setAttribute("controls", "");
-    player.setAttribute("autoplay", "");
+    player.setAttribute("controls", "true");
+    player.setAttribute("autoplay", "true");
     player.setAttribute("loop", "");
     player.classList.add("w-full", "h-full", "block", "rounded-b-2xl", "overflow-hidden");
     container.appendChild(player);
