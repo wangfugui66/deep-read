@@ -55,16 +55,27 @@ def _cache_key(book_name: str, chapter_paths: list[str]) -> str:
     return hashlib.sha256(payload.encode()).hexdigest()[:12] + ".html"
 
 
-def _strip_markdown_fences(text: str) -> str:
-    """Robustly remove ```html ... ``` fences that LLMs often wrap around output.
+def _extract_clean_html(content: str) -> str:
+    """Robustly extract pure HTML from LLM output.
 
-    Handles: ```html, ```HTML, ```, leading/trailing whitespace, and multiple
-    fence variants in a single pass.
+    Uses a non-greedy match from the very first <!DOCTYPE html> or <html tag
+    through to the closing </html>, discarding everything else (preface text,
+    ``<think>`` blocks, trailing LLM afterthought, Markdown fences, etc.).
+
+    Fallback: brute-force strip common fence markers.
     """
-    t = text.strip()
-    t = re.sub(r"^```(?:html|HTML|htm|HTM)?\s*\n?", "", t)
-    t = re.sub(r"\n?```\s*$", "", t)
-    return t.strip()
+    t = content.strip()
+    # ── Primary: extract the single complete <html>…</html> document ──
+    match = re.search(
+        r'(?:<!DOCTYPE\s+html[^>]*>|<html\b).*?</html>',
+        t,
+        re.IGNORECASE | re.DOTALL,
+    )
+    if match:
+        return match.group(0).strip()
+
+    # ── Fallback: incomplete output (missing closing tag) ──
+    return t.replace("```html", "").replace("```HTML", "").replace("```", "").strip()
 
 
 # ── Core generator ──
@@ -146,7 +157,7 @@ async def generate_animation(
         return {"status": "error", "message": f"LLM call failed: {exc}"}
 
     # 3. Strip markdown fences and validate
-    html = _strip_markdown_fences(raw_output)
+    html = _extract_clean_html(raw_output)
 
     if not html.strip().startswith("<"):
         logger.warning("LLM output does not start with '<' — possible misformat. First 200 chars: %s", html[:200])
